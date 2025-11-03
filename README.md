@@ -31,3 +31,13 @@ Large Language Models (LLMs) — such as GPT-4 — are increasingly being used t
 
 ## Reference
 Source: [IBM — AI Code Review](https://www.ibm.com/think/insights/ai-code-review)
+
+
+
+# Week 2 Meeting My Supervisor and Deciding What to Choose
+
+Before I met my supervisor, I spent some time thinking about what would help me after I graduate and finish university. I asked myself what things I like and what things I don’t. After a while, I realized that I really enjoy AI and that I’m good at it, so I decided I want to do something in that field.
+
+I started thinking about what kind of project could help a student develop their programming skills faster and in a more efficient way. Then I came up with the idea of an automated code review tool — something that helps students see where they are weak and shows them how to improve.
+
+When I met my supervisor, we discussed the idea, and he suggested making it more interactive — for example, allowing students to learn and get feedback while they are writing the code itself. He also mentioned that I could improve it even more by adding a feature that helps make the code more efficient — for instance, if the code takes 4 or 5 lines, the system could suggest a shorter or more optimized version.
