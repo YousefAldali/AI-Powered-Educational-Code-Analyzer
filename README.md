@@ -41,3 +41,24 @@ Before I met my supervisor, I spent some time thinking about what would help me 
 I started thinking about what kind of project could help a student develop their programming skills faster and in a more efficient way. Then I came up with the idea of an automated code review tool — something that helps students see where they are weak and shows them how to improve.
 
 When I met my supervisor, we discussed the idea, and he suggested making it more interactive — for example, allowing students to learn and get feedback while they are writing the code itself. He also mentioned that I could improve it even more by adding a feature that helps make the code more efficient — for instance, if the code takes 4 or 5 lines, the system could suggest a shorter or more optimized version.
+
+
+# Week 3 Progress Report
+
+This week, I focused on reading more about my project topic and trying to understand it in more depth.  
+I spent time learning about how to **collect data**, **train models**, **build the tool**, and **evaluate the results**.  
+I also started exploring research papers and documentation related to **CodeBERT** to understand how it works and how it can be used for automated code review.
+
+---
+
+### Key Points
+- Read and summarized key concepts about data collection, model training, and evaluation.  
+- Studied how **CodeBERT** connects natural language and programming languages.  
+- Took notes to outline the main stages of the project.  
+- Planned an initial workflow for the project (data → model → tool → evaluation).  
+
+---
+
+### Summary
+This week helped me get a clearer idea of how to start implementing the project and what areas I need to focus on next.
+
