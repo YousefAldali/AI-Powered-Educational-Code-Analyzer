@@ -1,4 +1,4 @@
-Week 1 : Choosing my prject 
+## **Week 1 : Choosing my prject**
 
 Before I met my supervisor, I spent some time thinking about what would help me after I graduate and finish university. I asked myself what things I like and what things I don’t. After a while, I realized that I really enjoy AI and that I’m good at it, so I decided I want to do something in that field.
 
