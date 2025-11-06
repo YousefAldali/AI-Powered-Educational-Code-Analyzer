@@ -91,3 +91,103 @@ They tested two different multi-task training strategies:
 In general, the paper showed that this kind of AI system could really help developers **save time**, **keep their code quality high**, and **protect data privacy**.
 
 ---
+
+
+## **Week 5: Medium (Revolutionizing Code Review with Large Language Models: A Deep Dive into code2Prompt and its Peers)**
+
+**Link:** [https://medium.com/anolytics/revolutionizing-code-review-with-large-language-models-a-deep-dive-into-code2prompt-and-its-peers-fa8213b47cfd](https://medium.com/anolytics/revolutionizing-code-review-with-large-language-models-a-deep-dive-into-code2prompt-and-its-peers-fa8213b47cfd)
+
+This week I read a Medium article titled **“Revolutionizing Code Review with Large Language Models: A Deep Dive into code2Prompt and its Peers.”**
+It explores how large language models like **GPT, CodeBERT**, and others are transforming code review. The main focus is on **code2Prompt**, comparing it with tools like **GitHub Copilot**, **DeepCode**, and **AI21 Labs Code Review**.
+
+The main goal of the article is to show how AI can **automate, prioritize, and improve the code review process.**
+
+---
+
+### 1) **Introduction**
+
+Code review is very important for:
+
+* Ensuring code quality
+* Detecting bugs
+* Promoting collaboration among engineers
+
+Manual reviews, however, are **slow, subjective, and inconsistent**, especially when dealing with large codebases.
+LLMs like GPT or CodeBERT can speed up the process by **automating** parts of it intelligently.
+
+---
+
+### 2) **The Current Landscape of LLM-Based Code Review Tools**
+
+The article discusses three main AI-powered tools currently in use:
+
+* **GitHub Copilot**
+* **DeepCode**
+* **AI21 Labs Code Review**
+
+These tools help with syntax and bug detection but are **not fully intelligent reviewers**.
+
+---
+
+### 3) **code2Prompt — The New Solution**
+
+**code2Prompt** is presented as an **advanced LLM-based reviewer** that overcomes many traditional limitations by using **semantic and contextual understanding** of the code.
+
+#### **How it works:**
+
+1. **Code Chunking**
+
+   * The code is divided into smaller logical blocks (chunks).
+   * This reduces overload and helps the AI focus on one piece at a time.
+   * Uses graph-based algorithms to find dependencies between functions and modules.
+
+2. **Contextualization**
+
+   * After chunking, the model analyzes how each code piece fits into the entire project.
+   * It uses **dependency, control flow, and data flow analysis** to understand relationships.
+   * This leads to **more accurate and relevant feedback.**
+
+3. **Prioritized Review**
+
+   * Not all code is equally risky — so code2Prompt ranks chunks by importance.
+   * It looks at:
+
+     * Code complexity
+     * Type of change
+     * Potential issues or style violations
+   * High-risk areas (like security-critical code) are reviewed first.
+
+4. **Code Quality Assessment**
+
+   * Goes beyond bug detection — it evaluates:
+
+     * Code style (PEP8, Google, Airbnb standards)
+     * Best practices
+     * Maintainability and readability
+   * Suggests **refactors** or style improvements to make code cleaner.
+
+---
+
+### 4) **Challenges and Limitations**
+
+Even with AI, there are still issues:
+
+* **Bias & Incompleteness:** LLMs can reflect their training data and miss edge cases.
+* **Explainability:** Hard to know why the AI made certain suggestions.
+* **Cost & Compute:** Running large models for every pull request can be expensive and slow.
+
+---
+
+### 5) **How This Relates to My Work**
+
+This article directly connects to my project idea — building an **AI code reviewer** that gives **smart and contextual feedback.**
+code2Prompt uses techniques I can integrate into my own system, such as:
+
+* Code **chunking**
+* **Contextual** review
+* **Risk-based prioritization**
+* **Code style evaluation**
+
+These methods will help me design a more **intelligent and structured code review system** for my project.
+
+---
