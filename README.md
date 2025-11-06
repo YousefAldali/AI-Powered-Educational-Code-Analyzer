@@ -191,3 +191,76 @@ code2Prompt uses techniques I can integrate into my own system, such as:
 These methods will help me design a more **intelligent and structured code review system** for my project.
 
 ---
+
+## **Week 6: Kinde (Reading More on How to Start the Project)**
+
+**Link:** [https://kinde.com/learn/ai-for-software-engineering/code-reviews/ai-code-review-automation-building-custom-linting-rules-with-llms/](https://kinde.com/learn/ai-for-software-engineering/code-reviews/ai-code-review-automation-building-custom-linting-rules-with-llms/)
+
+This week I continued reading more about how to **start building the AI code review project from scratch.**
+The article explains how traditional code reviews are very important for software quality, but they are also **slow and time-consuming.** Static tools like linters can catch syntax or style errors, but they can’t give **deep, contextual feedback** like a senior engineer would.
+This is where **AI-powered code review** comes in — using **Large Language Models (LLMs)** to create **custom linting rules** that go far beyond what normal static tools can do.
+
+---
+
+### 1) **What is AI-Powered Code Review?**
+
+AI-powered code review uses **LLMs** to analyze code changes and give feedback based on **custom natural language rules.**
+The AI reviewer acts like an **editor**, suggesting improvements to structure, clarity, and style — but following your team’s unique best practices and architecture, not just generic rules.
+
+---
+
+### 2) **How It Works**
+
+Automating code review with an LLM means integrating it with your **CI/CD pipeline**.
+The main steps are:
+
+1. **Trigger Event** – Pipeline starts when code is pushed.
+2. **Gather Context** – Collect files and diffs for review.
+3. **Define Rules** – Write custom NLP rules for how code should be reviewed.
+4. **Construct the Prompt** – Combine the code and the rules into a clear prompt.
+5. **Call the LLM API** – Send the prompt to the model for analysis.
+6. **Post Feedback** – Return comments or suggestions automatically.
+
+---
+
+### 3) **Use Cases for Custom AI Rules**
+
+The biggest advantage of this approach is that it can enforce **complex logic and team conventions** that static tools can’t handle, such as:
+
+* **Architectural Consistency:** e.g. `auth-service` should never make direct database calls; it must use the `user-management-service` API.
+* **Security Vulnerabilities:** Identify unsafe logical paths or missing checks.
+* **Code Quality & Maintainability:** Suggest splitting large functions or improving efficiency.
+* **Proper Documentation:** Make sure all major changes include updated docs or comments.
+
+---
+
+### 4) **Challenges and Misconceptions**
+
+Even with AI, there are still challenges:
+
+* **It’s a reviewer, not a dictator:** LLM feedback should be treated as suggestions, not rules that block merging.
+* **Cost:** Each pull request triggers API calls, so costs can add up quickly.
+* **Latency:** Large models can make feedback slow, so optimization is important.
+* **Prompt Engineering:** Clear and specific prompts lead to much better feedback.
+
+---
+
+### 5) **Best Practices for Implementation**
+
+Some good tips from the article:
+
+* **Start small:** Begin with 1–2 simple, high-value rules before expanding.
+* **Iterate your rules:** Update and evolve them as your codebase grows.
+* **Combine with traditional tools:** Use linters for syntax and AI for deep, contextual feedback.
+* **Secure API keys:** Store them safely in CI/CD secrets (like GitHub Secrets or GitLab variables).
+* **Be specific:** Instead of vague rules, write detailed instructions like “Ensure every function has a JSDoc comment block describing its purpose, parameters, and return value.”
+
+---
+
+### 6) **How This Helps My Project**
+
+This guide helps me understand **how to practically start building** my AI code review tool.
+It gives me a **clear workflow** — how to integrate the model into the pipeline, define my own review rules, and mix AI with existing linting tools.
+This is exactly what I need to begin implementing my project step-by-step.
+
+---
