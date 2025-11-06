@@ -6,6 +6,8 @@ I started thinking about what kind of project could help a student develop their
 
 When I met my supervisor, we discussed the idea, and he suggested making it more interactive — for example, allowing students to learn and get feedback while they are writing the code itself. He also mentioned that I could improve it even more by adding a feature that helps make the code more efficient — for instance, if the code takes 4 or 5 lines, the system could suggest a shorter or more optimized version.
 
+---
+
 
 # Week 2 Meeting My Supervisor and Deciding What to Choose
 
