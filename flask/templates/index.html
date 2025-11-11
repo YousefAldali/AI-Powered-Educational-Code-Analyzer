@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Flask Code Review</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Flask Code Review</h1>
+    <p class="subtitle">
+      Paste your Python or Java code below and click <strong>Review</strong>.
+    </p>
+
+    <form method="POST">
+      <textarea
+        name="code"
+        rows="14"
+        placeholder="Paste your code here..."
+      >{{ code or '' }}</textarea>
+
+      <button type="submit">Review</button>
+    </form>
+
+    {% if review %}
+      <div class="result">
+        <h2>Feedback</h2>
+        <ul>
+          {% for issue in review.issues %}
+            <li>{{ issue }}</li>
+          {% endfor %}
+        </ul>
+
+        <h2>Summary</h2>
+        <p>{{ review.summary }}</p>
+      </div>
+    {% endif %}
+  </div>
+</body>
+</html>
