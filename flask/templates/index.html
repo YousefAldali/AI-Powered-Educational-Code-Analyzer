@@ -11,17 +11,11 @@
     <p class="subtitle">
       Paste your Python or Java code below and click <strong>Review</strong>.
     </p>
-
-    <form method="POST">
-      <textarea
-        name="code"
-        rows="14"
-        placeholder="Paste your code here..."
-      >{{ code or '' }}</textarea>
-
-      <button type="submit">Review</button>
-    </form>
-
+<form method="POST" enctype="multipart/form-data">
+    <textarea name="code" rows="14" placeholder="Paste your code here...">{{ code or '' }}</textarea>
+    <button type="submit">Review</button>
+    <input type="file" name="file" accept=".py">
+</form>
     {% if review %}
       <div class="result">
         <h2>Feedback</h2>

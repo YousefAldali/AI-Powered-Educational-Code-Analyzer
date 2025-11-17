@@ -2,9 +2,13 @@ from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # Later I can change this to 50MB
+
 def simple_review(code: str) -> dict:
     issues = []
     lines = code.splitlines()
+    if len(code) > 50000:
+        issues.append("The code is too long for a simple review. Please submit smaller chunks.")
 
     if not code.strip():
         return {
@@ -36,9 +40,22 @@ def index():
     review_result = None
 
     if request.method == "POST":
-        code = request.form.get("code", "")
-        review_result = simple_review(code)
-
+        file = request.files.get("file")
+        if file and file.filename.endswith(".py"):
+            try:
+                code = file.read().decode("utf-8")
+            except Exception:
+                review_result = {
+                    "issues": ["Could not read the uploaded file"],
+                    "summary": "Upload error."
+                }
+            else:
+                review_result = simple_review(code)
+        else:
+            code = request.form.get("code", "")
+            if code:
+                review_result = simple_review(code)
+                
     return render_template("index.html", code=code, review=review_result)
 
 
