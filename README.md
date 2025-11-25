@@ -266,3 +266,14 @@ It gives me a **clear workflow** — how to integrate the model into the pipelin
 This is exactly what I need to begin implementing my project step-by-step.
 
 ---
+
+## Week 7 Report – Flask
+ (https://flask.palletsprojects.com/en/stable/)
+
+This week I started coding parts of my project. Before doing anything big, I wanted to choose a simple and clear way to begin. So I did a bit of research and found something called **Flask**. It’s a web application framework in Python, and honestly it looked very easy to understand.
+
+After reading more about it, I actually liked it a lot. It’s lightweight, simple, and gives me full control over how I want my backend to look. It doesn’t force anything, and that’s perfect for me at this stage of the project.
+
+So I started building a small Flask web application. Nothing complicated, just a clean and simple design that helps me get used to how Flask works. I also made a basic page where you can paste code directly or upload a `Python` file. This is my first step toward the real system where students will send their code for analysis.
+
+This week was mainly about understanding Flask, setting everything up, and creating the first version of my web app. It’s a small step, but it already looks good and gives me a clear direction for what I want to do next.
