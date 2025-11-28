@@ -12,14 +12,17 @@
       Paste your Python or Java code below and click <strong>Review</strong>.
     </p>
 <form method="POST" enctype="multipart/form-data">
-   <div id="editor">
-  <div id="lineNumbers"></div>
-  <textarea id="code" name="code" rows="14" placeholder="Paste your code here...">{{ code or '' }}</textarea>
-  </div>
 
-<button type="submit">Review</button>
-<input type="file" name="file" accept=".py">
+    <div class="editor-wrapper">
+        <div id="editor"></div>
+    </div>
+
+    <textarea id="code" name="code" style="display:none;">{{ code or '' }}</textarea>
+
+    <button type="submit">Review</button>
+    <input type="file" name="file" accept=".py">
 </form>
+
     {% if review %}
       <div class="result">
         <h2>Feedback</h2>
@@ -34,28 +37,67 @@
       </div>
     {% endif %}
   </div>
-  <script>
-function updateLines() {
-    const textarea = document.getElementById("code");
-    const lines = textarea.value.split("\n").length;
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
 
-    let lineNumbers = "";
-    for (let i = 1; i <= lines; i++) {
-        lineNumbers += i + "<br>";
-    }
-    document.getElementById("lineNumbers").innerHTML = lineNumbers;
-}
 
-function syncScroll() {
-    document.getElementById("lineNumbers").scrollTop =
-        document.getElementById("code").scrollTop;
-}
+<script>
+require.config({
+    paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }
+});
 
-document.getElementById("code").addEventListener("input", updateLines);
-document.getElementById("code").addEventListener("scroll", syncScroll);
+require(['vs/editor/editor.main'], function () {
 
-updateLines();
+    monaco.editor.defineTheme('yousefTheme', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [
+            { token: '', foreground: 'e5e7eb', background: '020617' }, 
+            { token: 'comment', foreground: '6b7280' },
+            { token: 'keyword', foreground: '38bdf8' },   
+            { token: 'string', foreground: 'a3e635' },     
+            { token: 'number', foreground: 'f97316' },     
+        ],
+        colors: {
+            'editor.background': '#020617',
+            'editorGutter.background': '#020617',
+
+            'editorLineNumber.foreground': '#38bdf8',
+            'editorLineNumber.activeForeground': '#0ea5e9',
+
+            'editorCursor.foreground': '#38bdf8',
+
+            'editor.foreground': '#e5e7eb',
+
+            'editor.lineHighlightBackground': '#1e293b55',
+
+            'editor.selectionBackground': '#1e3a8a44',
+
+            'scrollbarSlider.background': '#47556955',
+            'scrollbarSlider.activeBackground': '#475569aa',
+            'scrollbarSlider.hoverBackground': '#47556988',
+        }
+    });
+
+    window.editor = monaco.editor.create(document.getElementById('editor'), {
+        value: document.getElementById('code').value,
+        language: 'python',
+        theme: 'yousefTheme',
+        fontSize: 14,
+        fontFamily: "Consolas, 'Fira Code', monospace",
+        automaticLayout: true,
+        wordWrap: "on",
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        tabSize: 4,
+        insertSpaces: true
+    });
+
+    document.querySelector("form").addEventListener("submit", function () {
+        document.getElementById("code").value = editor.getValue();
+    });
+});
 </script>
+
 
 </body>
 </html>

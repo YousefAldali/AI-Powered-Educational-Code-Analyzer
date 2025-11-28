@@ -75,16 +75,21 @@ button:hover {
   margin-bottom: 4px;
   font-size: 14px;
 }
-#editor {
-  position: relative;
-  width: 100%;
-  display: flex;
-  border-radius: 8px;
-  border: 1px solid #374151;
-  overflow: hidden;
-  background: #020617;
+.editor-wrapper {
   margin-top: 12px;
+  background: #020617;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  width: 100%;
+  padding: 12px;    
+  box-sizing: border-box;
 }
+
+#editor {
+  height: 350px;
+  width: 100%;
+}
+
 
 #lineNumbers {
   width: 18px;           
