@@ -3,11 +3,13 @@ import os
 import subprocess
 import tempfile
 import json
-
+from yxa342.flask.models.CodeBERT.classifier import CodeClassifier
 app = Flask(__name__)
 
 
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 # Later I can change this to 50MB
+
+classifier = CodeClassifier()
 
 def run_static_analysis(code_content: str) -> dict:
     issues = []
