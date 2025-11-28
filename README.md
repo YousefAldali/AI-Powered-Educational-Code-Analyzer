@@ -2,9 +2,9 @@
 
 Before I met my supervisor, I spent some time thinking about what would help me after I graduate and finish university. I asked myself what things I like and what things I don’t. After a while, I realized that I really enjoy AI and that I’m good at it, so I decided I want to do something in that field.
 
-I started thinking about what kind of project could help a student develop their programming skills faster and in a more efficient way. Then I came up with the idea of an automated code review tool — something that helps students see where they are weak and shows them how to improve.
+I started thinking about what kind of project could help a student develop their programming skills faster and in a more efficient way. Then I came up with the idea of an automated code review tool something that helps students see where they are weak and shows them how to improve.
 
-When I met my supervisor, we discussed the idea, and he suggested making it more interactive — for example, allowing students to learn and get feedback while they are writing the code itself. He also mentioned that I could improve it even more by adding a feature that helps make the code more efficient — for instance, if the code takes 4 or 5 lines, the system could suggest a shorter or more optimized version.
+When I met my supervisor, we discussed the idea, and he suggested making it more interactive for example, allowing students to learn and get feedback while they are writing the code itself. He also mentioned that I could improve it even more by adding a feature that helps make the code more efficient for instance, if the code takes 4 or 5 lines, the system could suggest a shorter or more optimized version.
 
 ---
 
@@ -17,7 +17,7 @@ AI code review is a tool that uses AI techniques to assist in reviewing code for
 
 Before starting, it's important to note that machine learning (ML) models are used to identify problems and small bugs in code, as well as detect security issues and vulnerabilities.
 
-AI code review tools often provide suggestions — or even automated fixes — helping developers save time and improve code quality.
+AI code review tools often provide suggestions or even automated fixes helping developers save time and improve code quality.
 
 ---
 
@@ -36,7 +36,7 @@ Uses **predefined rules and best practices** to analyze code consistency, style,
 
 ### 4. NLP and LLMs
 Natural Language Processing (NLP) models trained on large datasets of code form the core of modern AI code review.  
-Large Language Models (LLMs) — such as GPT-4 — are increasingly being used to provide context-aware feedback and suggestions.
+Large Language Models (LLMs) such as GPT 4 are increasingly being used to provide context-aware feedback and suggestions.
 
 ---
 
@@ -58,7 +58,7 @@ I also started exploring research papers and documentation related to **CodeBERT
 - Read and summarized key concepts about data collection, model training, and evaluation.  
 - Studied how **CodeBERT** connects natural language and programming languages.  
 - Took notes to outline the main stages of the project.  
-- Planned an initial workflow for the project (data → model → tool → evaluation).  
+- Planned an initial workflow for the project (data ,model ,tool , evaluation).  
 
 ---
 
@@ -72,9 +72,9 @@ This week helped me get a clearer idea of how to start implementing the project 
 
 **Link:** [https://www.promptlayer.com/research-papers/revolutionizing-code-reviews-with-ai-powered-automation](https://www.promptlayer.com/research-papers/revolutionizing-code-reviews-with-ai-powered-automation)
 
-This week I read a new paper called **“Code Review Automation via Multi-task Federated LLM – An Empirical Study”** by *Jahnavi Kumar* and *Sridhar Chimalakonda*. It talks about how **AI** and **federated learning** can help automate the code review process.
+This week I read a new paper called **“Code Review Automation via Multi task Federated LLM  An Empirical Study”** by *Jahnavi Kumar* and *Sridhar Chimalakonda*. It talks about how **AI** and **federated learning** can help automate the code review process.
 
-The idea is that normal code reviews take a lot of time, so they used a **large language model** that can handle multiple things at once — like checking if a code change needs a review, writing comments, and even suggesting how to improve the code.
+The idea is that normal code reviews take a lot of time, so they used a **large language model** that can handle multiple things at once like checking if a code change needs a review, writing comments, and even suggesting how to improve the code.
 
 The researchers from **IIT Tirupati** propose using a **multi-task federated LLM**, meaning:
 
@@ -87,8 +87,8 @@ The researchers from **IIT Tirupati** propose using a **multi-task federated LLM
 
 They tested two different multi-task training strategies:
 
-* **Sequential Training** – trained tasks one after another, but the model forgot older tasks
-* **Cumulative Training** – trained all tasks together, which worked better
+* **Sequential Training**  trained tasks one after another, but the model forgot older tasks
+* **Cumulative Training**  trained all tasks together, which worked better
 
 In general, the paper showed that this kind of AI system could really help developers **save time**, **keep their code quality high**, and **protect data privacy**.
 
@@ -119,9 +119,9 @@ LLMs like GPT or CodeBERT can speed up the process by **automating** parts of it
 
 ---
 
-### 2) **The Current Landscape of LLM-Based Code Review Tools**
+### 2) **The Current Landscape of LLM Based Code Review Tools**
 
-The article discusses three main AI-powered tools currently in use:
+The article discusses three main AI powered tools currently in use:
 
 * **GitHub Copilot**
 * **DeepCode**
@@ -131,9 +131,9 @@ These tools help with syntax and bug detection but are **not fully intelligent r
 
 ---
 
-### 3) **code2Prompt — The New Solution**
+### 3) **code2Prompt : The New Solution**
 
-**code2Prompt** is presented as an **advanced LLM-based reviewer** that overcomes many traditional limitations by using **semantic and contextual understanding** of the code.
+**code2Prompt** is presented as an **advanced LLM based reviewer** that overcomes many traditional limitations by using **semantic and contextual understanding** of the code.
 
 #### **How it works:**
 
@@ -141,7 +141,7 @@ These tools help with syntax and bug detection but are **not fully intelligent r
 
    * The code is divided into smaller logical blocks (chunks).
    * This reduces overload and helps the AI focus on one piece at a time.
-   * Uses graph-based algorithms to find dependencies between functions and modules.
+   * Uses graph based algorithms to find dependencies between functions and modules.
 
 2. **Contextualization**
 
@@ -151,17 +151,17 @@ These tools help with syntax and bug detection but are **not fully intelligent r
 
 3. **Prioritized Review**
 
-   * Not all code is equally risky — so code2Prompt ranks chunks by importance.
+   * Not all code is equally risky so code2Prompt ranks chunks by importance.
    * It looks at:
 
      * Code complexity
      * Type of change
      * Potential issues or style violations
-   * High-risk areas (like security-critical code) are reviewed first.
+   * High risk areas (like security critical code) are reviewed first.
 
 4. **Code Quality Assessment**
 
-   * Goes beyond bug detection — it evaluates:
+   * Goes beyond bug detection it evaluates:
 
      * Code style (PEP8, Google, Airbnb standards)
      * Best practices
@@ -182,7 +182,7 @@ Even with AI, there are still issues:
 
 ### 5) **How This Relates to My Work**
 
-This article directly connects to my project idea — building an **AI code reviewer** that gives **smart and contextual feedback.**
+This article directly connects to my project idea building an **AI code reviewer** that gives **smart and contextual feedback.**
 code2Prompt uses techniques I can integrate into my own system, such as:
 
 * Code **chunking**
@@ -199,15 +199,15 @@ These methods will help me design a more **intelligent and structured code revie
 **Link:** [https://kinde.com/learn/ai-for-software-engineering/code-reviews/ai-code-review-automation-building-custom-linting-rules-with-llms/](https://kinde.com/learn/ai-for-software-engineering/code-reviews/ai-code-review-automation-building-custom-linting-rules-with-llms/)
 
 This week I continued reading more about how to **start building the AI code review project from scratch.**
-The article explains how traditional code reviews are very important for software quality, but they are also **slow and time-consuming.** Static tools like linters can catch syntax or style errors, but they can’t give **deep, contextual feedback** like a senior engineer would.
-This is where **AI-powered code review** comes in — using **Large Language Models (LLMs)** to create **custom linting rules** that go far beyond what normal static tools can do.
+The article explains how traditional code reviews are very important for software quality, but they are also **slow and time consuming.** Static tools like linters can catch syntax or style errors, but they can’t give **deep, contextual feedback** like a senior engineer would.
+This is where **AI powered code review** comes in using **Large Language Models (LLMs)** to create **custom linting rules** that go far beyond what normal static tools can do.
 
 ---
 
 ### 1) **What is AI-Powered Code Review?**
 
 AI-powered code review uses **LLMs** to analyze code changes and give feedback based on **custom natural language rules.**
-The AI reviewer acts like an **editor**, suggesting improvements to structure, clarity, and style — but following your team’s unique best practices and architecture, not just generic rules.
+The AI reviewer acts like an **editor**, suggesting improvements to structure, clarity, and style but following your team’s unique best practices and architecture, not just generic rules.
 
 ---
 
@@ -262,8 +262,8 @@ Some good tips from the article:
 ### 6) **How This Helps My Project**
 
 This guide helps me understand **how to practically start building** my AI code review tool.
-It gives me a **clear workflow** — how to integrate the model into the pipeline, define my own review rules, and mix AI with existing linting tools.
-This is exactly what I need to begin implementing my project step-by-step.
+It gives me a **clear workflow**  how to integrate the model into the pipeline, define my own review rules, and mix AI with existing linting tools.
+This is exactly what I need to begin implementing my project step by step.
 
 ---
 
@@ -277,3 +277,25 @@ After reading more about it, I actually liked it a lot. It’s lightweight, simp
 So I started building a small Flask web application. Nothing complicated, just a clean and simple design that helps me get used to how Flask works. I also made a basic page where you can paste code directly or upload a `Python` file. This is my first step toward the real system where students will send their code for analysis.
 
 This week was mainly about understanding Flask, setting everything up, and creating the first version of my web app. It’s a small step, but it already looks good and gives me a clear direction for what I want to do next.
+
+
+## Week 8 Report – Analyzer and Security
+
+- https://flake8.pycqa.org/en/latest/
+- https://bandit.readthedocs.io/en/latest/
+- https://github.com/microsoft/CodeBERT/blob/master/README.md
+- https://www.researchgate.net/publication/347233117_CodeBERT_A_Pre-Trained_Model_for_Programming_and_Natural_Languages
+- https://huggingface.co/microsoft/codebert-base
+
+
+This week, I worked on the analysis and security aspects of my project, as outlined in my proposal. I focused on integrating and testing **Bandit** and **Flake8**, and I also spent time gaining a deeper understanding of **CodeBERT** and its limitations to better guide the development of the project.
+
+I added Bandit and Flake8 into my Flask application, ran several tests, and confirmed that both tools work as expected, with the exception of an issue related to infinite `while` loops. Since this is a semantic error, it will likely require an AI-based approach to resolve later in the project.
+
+Additionally, I researched more about CodeBERT, the model I will be using for code analysis. I identified several limitations:  
+- CodeBERT can only analyze **one file at a time**  
+- It cannot naturally handle **multiple interconnected files**  
+- It has an **input limit of 512 tokens**
+
+These constraints will affect the usability and functionality of the tool. To address this, I plan to implement a method to structure and pass multiple related files to the model. I will also explore approaches for increasing input capacity, such as splitting code intelligently, summarizing portions of it, or potentially switching to a more powerful model in the future.
+
