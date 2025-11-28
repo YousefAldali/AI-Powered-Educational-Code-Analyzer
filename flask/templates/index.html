@@ -12,9 +12,13 @@
       Paste your Python or Java code below and click <strong>Review</strong>.
     </p>
 <form method="POST" enctype="multipart/form-data">
-    <textarea name="code" rows="14" placeholder="Paste your code here...">{{ code or '' }}</textarea>
-    <button type="submit">Review</button>
-    <input type="file" name="file" accept=".py">
+   <div id="editor">
+  <div id="lineNumbers"></div>
+  <textarea id="code" name="code" rows="14" placeholder="Paste your code here...">{{ code or '' }}</textarea>
+  </div>
+
+<button type="submit">Review</button>
+<input type="file" name="file" accept=".py">
 </form>
     {% if review %}
       <div class="result">
@@ -30,5 +34,28 @@
       </div>
     {% endif %}
   </div>
+  <script>
+function updateLines() {
+    const textarea = document.getElementById("code");
+    const lines = textarea.value.split("\n").length;
+
+    let lineNumbers = "";
+    for (let i = 1; i <= lines; i++) {
+        lineNumbers += i + "<br>";
+    }
+    document.getElementById("lineNumbers").innerHTML = lineNumbers;
+}
+
+function syncScroll() {
+    document.getElementById("lineNumbers").scrollTop =
+        document.getElementById("code").scrollTop;
+}
+
+document.getElementById("code").addEventListener("input", updateLines);
+document.getElementById("code").addEventListener("scroll", syncScroll);
+
+updateLines();
+</script>
+
 </body>
 </html>
