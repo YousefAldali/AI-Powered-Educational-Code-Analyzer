@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.cache/
+*.cache
+
+venv/
