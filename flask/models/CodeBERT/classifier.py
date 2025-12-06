@@ -1,4 +1,4 @@
-from yxa342.flask.models.CodeBERT.codebert_loader import CodeBERTModel
+from .codebert_loader import CodeBERTModel
 
 class CodeClassifier:
     def __init__(self):
