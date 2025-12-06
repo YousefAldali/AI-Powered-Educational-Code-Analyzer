@@ -299,3 +299,144 @@ Additionally, I researched more about CodeBERT, the model I will be using for co
 
 These constraints will affect the usability and functionality of the tool. To address this, I plan to implement a method to structure and pass multiple related files to the model. I will also explore approaches for increasing input capacity, such as splitting code intelligently, summarizing portions of it, or potentially switching to a more powerful model in the future.
 
+
+
+
+
+## Week 9 Report:  Model Understanding, Tokenization & Baseline Setup
+
+This week was mainly about building a proper foundation before adding the machine learning model into my system. At the start, I wasn’t fully sure how to integrate CodeBERT or even where to place the different components inside the project. This lack of clarity made it difficult to start the implementation, so I focused first on understanding how the model processes code and how the different baselines fit together.
+
+Once I understood the tokenizer → embeddings → transformer → classifier pipeline, everything started to fall into place and I was finally able to plan out how I will integrate the model.
+
+---
+
+## Interface Updates
+
+- Added the Monaco editor.
+- Improved the design of the tool to make it cleaner, more readable, and easier to use.
+
+---
+
+## Main Challenges This Week
+
+- Not knowing where to begin with CodeBERT integration.
+- Confusion about how tokenization, embeddings, and vectorization differ.
+- Trying to understand why CodeBERT uses 768-dimensional embeddings.
+- Learning both classical ML approaches and transformer based approaches at the same time.
+- Making Baseline B clear but also aware of its limitations.
+- Realising I needed the theory before any serious coding.
+
+A lot of this week was understanding, not implementation, but it should save time later.
+
+---
+
+## Baselines for My Project
+
+I finalised the list of baselines I will use to evaluate CodeBERT. Each baseline represents a different level of complexity, from classical tools to modern transformer models, and maybe later i will be adding more based on my supervisor.
+
+### Baseline A: Static Analysis Tools (Bandit + Flake8)  
+**Status:** (Completed)
+
+These tools provide rule based checks for style issues and simple security problems. They are useful, but they cannot detect deeper logic errors or semantic bugs. This baseline gives me a traditional, non-ML reference point.
+
+---
+
+### Baseline B: Keyword Matching (Very Simple Rules)  
+**Status:** (Completed)
+
+This baseline checks for obvious risky patterns such as:
+
+- Infinite loops.
+- Unsafe or risky functions.
+- Inputs without validation.
+
+It is intentionally weak, but it shows how simple heuristics perform and creates a clear gap that CodeBERT should be able to fill.
+
+---
+
+### Baseline C: TF-IDF + Logistic Regression (Classical ML)  
+**Status:** In Progress
+
+This baseline will:
+
+- Convert code into TF-IDF vectors.
+- Train a Logistic Regression classifier.
+- Predict whether code is “buggy” or “clean”.
+
+It is easy to train and explain, and it will help show the difference between classical ML and transformer-based models. This baseline is important because it provides a fair mid-level comparison.
+
+---
+
+### Baseline D: CodeBERT (Transformer Model)  
+**Status:** Preparation Phase
+
+This is the main model for my FYP. It uses:
+
+- A BPE tokenizer.
+- 768-dimensional embeddings.
+- Multiple transformer layers.
+- A classification head on top.
+
+This model should capture structure, context, and meaning in the code, making it more capable than the previous baselines. I will start integrating it once the baselines are fully set up.
+
+---
+
+## Tokenizer & Vectorization Notes
+
+Understanding how text is processed before reaching the model was a major focus this week. This helped me understand why different baselines behave the way they do.
+
+### 1. BPE Tokenizer (CodeBERT)
+
+CodeBERT uses a Byte bair Encoding tokenizer, which breaks code into subword units rather than whole words. This is important because programming languages have huge numbers of unique identifiers. BPE:
+
+- Handles new variable and function names.
+- Works across multiple programming languages.
+- Treats symbols and operators consistently.
+
+---
+
+### 2. Embeddings (768-Dimensional)
+
+After tokenization, each token is mapped to a 768-dimensional embedding vector. These embeddings represent:
+
+- Context.
+- Syntax.
+- Code structure.
+- Relationships between parts of the code.
+
+This is how CodeBERT forms a deeper understanding of the input instead of simply counting words.
+
+---
+
+### 3. TF-IDF (For Baseline C)
+
+TF-IDF converts code into numeric values based on how often each token appears and how important it is across the dataset. It does not capture context, but:
+
+- It is simple.
+- It is easy to interpret.
+- It provides a solid classical baseline.
+
+---
+
+### 4. Comparing Vectorization Approaches
+
+#### CodeBERT (BPE + Embeddings)
+
+- Learns from large code datasets.
+- Understands structure and meaning.
+- Captures relationships between variables, functions, and control flow.
+- Suitable for detecting more complex logic and semantic bugs.
+
+#### TF-IDF
+
+- Counts words without context.
+- Simple to train.
+- Good for establishing a baseline.
+- Helps highlight the improvement from using transformer-based models.
+
+---
+
+
+This week was mostly about understanding the foundation I need before implementing the model. I improved the design with Monaco, completed Baselines A and B, and prepared for Baseline C and CodeBERT. I also learned how tokenization, embeddings, and vectorization work, which finally gave me a clear picture of how the model will fit into the system.
+
