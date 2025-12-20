@@ -440,3 +440,71 @@ TF-IDF converts code into numeric values based on how often each token appears a
 
 This week was mostly about understanding the foundation I need before implementing the model. I improved the design with Monaco, completed Baselines A and B, and prepared for Baseline C and CodeBERT. I also learned how tokenization, embeddings, and vectorization work, which finally gave me a clear picture of how the model will fit into the system.
 
+
+
+# Week 10 Report : Evaluation Preparation and Baselines
+
+## Overview
+This week focused on preparing the project for proper evaluation.  
+The main goal was to finalise the baselines, prepare a test dataset, and understand how to fairly compare CodeBERT against simpler approaches.
+
+## Dataset Preparation
+I prepared a clean evaluation dataset consisting of buggy and non-buggy Python code snippets.
+
+Key points:
+- The same test set will be used for all models
+- No overlap between training and testing data
+- Code samples are kept small to fit CodeBERT’s 512-token limit
+
+This ensures a fair and controlled comparison.
+
+## Baseline Definitions
+
+### Baseline A – Static Analysis
+This baseline uses Flake8 and Bandit to detect:
+- Style violations
+- Common programming errors
+- Basic security issues
+
+This represents traditional rule-based analysis tools.
+
+### Baseline B – Keyword Matching
+A very simple heuristic approach:
+- Flags patterns such as `while True`, `eval()`, and unsafe `input()`
+- No learning or context awareness
+
+This baseline is intentionally weak to highlight its limitations.
+
+### Baseline C – Classical Machine Learning
+A lightweight machine learning baseline using:
+- Code tokenisation
+- TF-IDF feature extraction
+- Logistic Regression for classification
+
+This provides a strong non-deep-learning comparison.
+
+## Model Understanding
+I also focused on understanding how CodeBERT processes source code:
+- Code is split into subword tokens
+- Tokens are converted into embedding vectors
+- A classification head predicts buggy or non-buggy code
+
+This helped in planning evaluation and analysis.
+
+## Evaluation Plan
+The planned evaluation metrics include:
+- Accuracy
+- Precision and recall
+- Manual inspection of detected issues
+
+Both quantitative and qualitative results will be reported.
+
+## Identified Limitations
+Some current limitations were identified:
+- Only single-file analysis is supported
+- No cross-file context is considered
+- Large files must be truncated due to token limits
+
+These limitations will be discussed as future work.
+
+
