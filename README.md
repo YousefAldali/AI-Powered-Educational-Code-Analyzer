@@ -557,3 +557,49 @@ So if I split the dataset randomly by rows, I would cause leakage automatically.
 
 This week was mainly about understanding the dataset structure and why I must use a **correct splitting method** (e.g., splitting by pair/group/ID so both versions stay together) before training any model.
 
+## Week 12 : Fixing the Data Properly (`prepare_data.py` + 80/10/10 Split)
+
+This week I fixed the dataset splitting problem properly by creating a script called `prepare_data.py`. I realised I cannot do machine learning correctly without having:
+
+- **Train set**
+- **Validation set**
+- **Test set**
+
+And most importantly, these splits must not share **near-duplicate pairs** (buggy vs fixed versions of the same problem). If they do, the model can “cheat” and the evaluation becomes invalid.
+
+### What `prepare_data.py` Does
+
+- Reads the raw CSV file
+- Extracts **unique Problem IDs**
+- Shuffles the IDs using a **fixed random seed** (so the split is reproducible)
+- Splits the IDs into:
+  - **80% training**
+  - **10% validation**
+  - **10% test**
+- For each Problem ID, it creates two labeled examples:
+  - Buggy code → label **1** (bug present)
+  - Fixed code → label **0** (no bug)
+- Writes the final clean files:
+  - `train.csv`
+  - `val.csv`
+  - `test.csv`
+
+### Why Splitting by ID Matters
+
+The key point is that splitting by **Problem ID** keeps buggy and fixed versions together in the same split:
+
+- **ID 100 → Train** (buggy + fixed)
+- **ID 101 → Test** (buggy + fixed)
+
+So now there is:
+- **no cheating**
+- **no leakage**
+- **scientifically valid evaluation**
+
+### Challenges I Faced This Week
+
+- **Near-duplicate data problem:** the buggy and fixed versions are extremely similar, so random splitting by rows breaks evaluation.
+- **Choosing the right split method:** I had to split by **ID/group** instead of rows to stop leakage properly.
+- **Reproducibility:** without a fixed seed, each split would change every run, making results hard to compare fairly.
+- **Label consistency:** I had to keep labels consistent across the whole project (Buggy = 1, Fixed = 0) so training and evaluation are not confusing.
+- **Balancing the splits:** using 80/10/10 means I need enough data in validation and test to measure performance reliably.
