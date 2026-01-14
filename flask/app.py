@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 import json
 from models.CodeBERT.classifier import CodeClassifier
-from baselines.baseline import run_static_analysis, run_keyword_baseline
+from baselines.baseline import run_static_analysis, run_keyword_baseline, run_tfidf_baseline
 
 app = Flask(__name__)
 
@@ -19,6 +19,8 @@ def index():
     code = ""
     review_result = None
     baseline_b_result = None
+    baseline_c_result = None
+    codebert_result = None
 
     if request.method == "POST":
         file = request.files.get("file")
@@ -40,7 +42,12 @@ def index():
 
             # Baseline B
             baseline_b_result = run_keyword_baseline(code)
-
+            
+            # Baseline C
+            baseline_c_result = run_tfidf_baseline(code)
+            
+            # Deep ML (CodeBERT)
+            codebert_result = classifier.classify(code)
         else:
             review_result = {
                 "issues": ["Please submit some code or upload a file."],
@@ -51,7 +58,9 @@ def index():
         "index.html",
         code=code,
         review=review_result,
-        baseline_b=baseline_b_result
+        baseline_b=baseline_b_result,
+        baseline_c=baseline_c_result,
+        codebert=codebert_result
     )
 
 
