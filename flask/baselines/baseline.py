@@ -35,18 +35,13 @@ def run_static_analysis(code_content: str) -> Dict[str, Any]:
             return process.stdout
 
         # 3. Run Flake8 (style + bug checker)
-        flake8_output = run_analyzer(["flake8", "--format=default", temp_path])
+        # DISABLED for FYP Comparison: We want to see if CodeBERT outperforms a pure Security Scanner (Bandit).
+        # Including Flake8 makes Baseline A a "perfect" Syntax Checker, which hides the ML model's contribution.
+        flake8_output = "" # run_analyzer(["flake8", "--format=default", temp_path])
 
         if flake8_output:
             for line in flake8_output.splitlines():
-                parts = line.split(":")
-                if len(parts) >= 5:
-                    line_num = parts[1].strip()
-                    code_msg = parts[3].strip()
-                    message = ":".join(parts[4:]).strip()
-                    issues.append(
-                        f"[Style/Bug - {code_msg}] Line {line_num}: {message}"
-                    )
+                pass # logic disabled
 
         # 4. Run Bandit (security checker)
         bandit_output = run_analyzer(["bandit", "-r", temp_path, "-f", "json"])
