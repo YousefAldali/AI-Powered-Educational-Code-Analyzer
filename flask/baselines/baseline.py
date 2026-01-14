@@ -35,9 +35,9 @@ def run_static_analysis(code_content: str) -> Dict[str, Any]:
             return process.stdout
 
         # 3. Run Flake8 (style + bug checker)
-        # DISABLED for FYP Comparison: We want to see if CodeBERT outperforms a pure Security Scanner (Bandit).
+        # DISABLED for FYP Comparison: i want to see if CodeBERT outperforms a pure Security Scanner (Bandit).
         # Including Flake8 makes Baseline A a "perfect" Syntax Checker, which hides the ML model's contribution.
-        flake8_output = "" # run_analyzer(["flake8", "--format=default", temp_path])
+        flake8_output = "" # run_analyzer
 
         if flake8_output:
             for line in flake8_output.splitlines():
