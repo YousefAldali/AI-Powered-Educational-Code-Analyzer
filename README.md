@@ -508,3 +508,52 @@ Some current limitations were identified:
 These limitations will be discussed as future work.
 
 
+
+
+# Week 11 – Data Collection + The Leakage Problem 
+
+Links : 
+https://www.kaggle.com/datasets/shamimhasan8/python-code-bug-and-fix-pairs?resource=download
+
+
+This week I focused on the dataset itself and why it is tricky for machine learning. I collected my data from Kaggle, and the dataset is **not** independent random code samples. Instead, it contains **buggy and fixed code in pairs**, meaning every buggy code snippet has a matching corrected version.
+
+## Example
+
+**ID = 100**
+
+### Buggy
+```python
+def add(a, b):
+    return a - b
+````
+
+### Fixed
+
+```python
+def add(a, b):
+    return a + b
+```
+
+## The Key Issue: Data Leakage
+
+The key issue is that these two pieces of code are **almost identical**. This creates a major machine learning problem: **data leakage**.
+
+If the model sees the buggy version during training and then sees the fixed version during testing (or the opposite), it can **“cheat”** by recognising near-duplicate patterns instead of actually learning how to detect bugs. This would produce **fake high accuracy** that does not represent real performance.
+
+## The Golden Rule of ML
+
+> Never let the model see the exam while it is studying.
+
+In my case:
+
+* **Training = studying**
+* **Testing = exam**
+* **Buggy/Fixed pairs = near-duplicate questions**
+
+So if I split the dataset randomly by rows, I would cause leakage automatically.
+
+## What I Learned This Week
+
+This week was mainly about understanding the dataset structure and why I must use a **correct splitting method** (e.g., splitting by pair/group/ID so both versions stay together) before training any model.
+
