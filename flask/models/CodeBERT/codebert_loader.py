@@ -1,18 +1,28 @@
-from transformers import RobertaTokenizer, RobertaForSequenceClassification
+import os
 import torch
+from transformers import RobertaTokenizer, RobertaForSequenceClassification
 
 class CodeBERTModel:
     def __init__(self):
         print("Loading CodeBERT Model...")
+        
+        # Check for fine-tuned model
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        finetuned_path = os.path.join(base_dir, "codebert_finetuned")
+        
+        if os.path.exists(finetuned_path):
+            model_path = finetuned_path
+            print(f"Loading Fine-Tuned CodeBERT from {model_path}")
+        else:
+            model_path = "microsoft/codebert-base"
+            print("Loading Base CodeBERT (Not Fine-Tuned)")
 
         # Load tokenizer
-        self.tokenizer = RobertaTokenizer.from_pretrained(
-            "microsoft/codebert-base"
-        )
+        self.tokenizer = RobertaTokenizer.from_pretrained(model_path)
 
         # Load model with classification head (2 labels: buggy / clean)
         self.model = RobertaForSequenceClassification.from_pretrained(
-            "microsoft/codebert-base",
+            model_path,
             num_labels=2
         )
 
