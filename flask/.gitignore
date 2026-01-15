@@ -1,0 +1,22 @@
+
+# Python
+__pycache__/
+*.pyc
+venv/
+*.egg-info/
+
+# Mac
+.DS_Store
+
+# Environment variables
+.env
+
+# Large Data & Models
+data/raw/
+models/codebert_finetuned/
+models/*.pkl
+
+# Generated Reports & Results
+reports/
+evaluation_results.csv
+*.backup
