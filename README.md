@@ -603,3 +603,86 @@ So now there is:
 - **Reproducibility:** without a fixed seed, each split would change every run, making results hard to compare fairly.
 - **Label consistency:** I had to keep labels consistent across the whole project (Buggy = 1, Fixed = 0) so training and evaluation are not confusing.
 - **Balancing the splits:** using 80/10/10 means I need enough data in validation and test to measure performance reliably.
+
+
+
+
+# Week 13 – Training Pipeline, Baselines (A, B, C), and TF-IDF
+
+This week I focused on what happens **after the data preparation stage** and how the different baselines fit into the overall training and evaluation pipeline.
+
+Once `prepare_data.py` finishes, the **test set is locked**.  
+From this point onward:
+
+- never train on `test.csv`
+- never look at test labels during training
+- the test set represents the **final exam**, not part of studying
+
+This follows the golden rule of machine learning and prevents data leakage.
+
+---
+
+## Why Baselines Exist
+
+The purpose of baselines is to answer one key question:
+
+**Is CodeBERT actually good, or does it just look good?**
+
+Baselines provide weaker reference systems so that any improvement achieved by CodeBERT is meaningful and measurable.
+
+---
+
+## Baseline A – Static Analysis (Bandit Only)
+
+Baseline A uses **Bandit** to scan code for security vulnerabilities and risky patterns such as `eval()` and `exec()`.
+
+I intentionally disabled **Flake8** for this baseline. Flake8 mainly detects syntax and formatting issues, and since the dataset contains many syntax-level bugs, including it would artificially inflate accuracy. This would allow the system to solve the task without learning.
+
+Using Bandit only makes this baseline a more fair **security-focused** reference.
+
+---
+
+## Baseline B – Keyword Matching
+
+Baseline B is the simplest possible approach and relies entirely on **string matching**, with no learning involved.
+
+Example:
+
+### python: 
+if "while True" in code:
+    buggy
+
+If the exact keyword appears, the code is flagged as buggy.
+There is no context, no abstraction, and no understanding. This baseline exists purely to demonstrate how weak rule-based approaches are.
+Baseline C – TF-IDF + Logistic Regression
+
+This baseline converts source code into TF-IDF vectors and trains a Logistic Regression classifier.
+
+In this project, TF-IDF treats code as a bag of tokens and assigns higher importance to tokens that are rare across the dataset but frequent within a specific sample.
+
+Examples:
+
+    def, return → low importance
+
+    eval, exec, while True → higher importance
+
+Limitations of TF-IDF
+
+TF-IDF suffers from several fundamental limitations:
+
+    token order is ignored
+
+    no semantic or contextual understanding
+
+    1 - 2 and 2 - 1 can look similar
+
+    short code snippets often contain too little lexical information
+
+As a result, the TF-IDF + Logistic Regression model sometimes misclassifies very short or trivial code samples. When feature information is sparse, the classifier tends to fall back to dataset-level statistical bias, producing near-random predictions with confidence close to 50%.
+Why TF-IDF Is Still Important
+
+Although TF-IDF cannot capture program semantics, it is included as a classical machine learning baseline. Its purpose is not to understand code correctly, but to highlight the limitations of bag-of-words representations when applied to source code.
+
+Even with careful preprocessing and calibration, TF-IDF remains significantly inferior to transformer-based models. In contrast, CodeBERT can correctly classify such cases by leveraging contextual embeddings and learned programming language semantics.
+
+This makes Baseline C a critical reference point and sets up a fair and meaningful comparison for evaluating CodeBERT.
