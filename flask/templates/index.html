@@ -4,6 +4,24 @@
   <meta charset="UTF-8" />
   <title>Code Review</title>
   <link rel="stylesheet" href="/static/style.css" />
+  <style>
+      .comparison-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 20px 0;
+          color: #e5e7eb;
+      }
+      .comparison-table th, .comparison-table td {
+          border: 1px solid #1e293b;
+          padding: 10px;
+          text-align: left;
+      }
+      .comparison-table th {
+          background-color: #1e293b;
+      }
+      .buggy { color: #ef4444; font-weight: bold; }
+      .clean { color: #a3e635; font-weight: bold; }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -24,16 +42,75 @@
 </form>
 
     {% if review %}
-      <div class="result">
-        <h2>Feedback</h2>
+      <div class="result-container">
+          <!-- Comparison Table -->
+          <h2>Model Comparison</h2>
+          <table class="comparison-table">
+              <thead>
+                  <tr>
+                      <th>Model</th>
+                      <th>Prediction</th>
+                      <th>Details</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  <!-- Baseline A -->
+                  <tr>
+                      <td>Baseline A (Static Analysis)</td>
+                      <td class="{{ 'buggy' if review.issues else 'clean' }}">
+                          {{ 'Buggy' if review.issues else 'Clean' }}
+                      </td>
+                      <td>{{ review.summary }}</td>
+                  </tr>
+                  <!-- Baseline B -->
+                  {% if baseline_b %}
+                  <tr>
+                      <td>Baseline B (Keywords)</td>
+                      <td class="{{ baseline_b.label }}">
+                          {{ baseline_b.label|title }}
+                      </td>
+                      <td>
+                          {% if baseline_b.issues %}
+                            {{ baseline_b.issues|join(', ') }}
+                          {% else %}
+                            No keywords found.
+                          {% endif %}
+                      </td>
+                  </tr>
+                  {% endif %}
+                  <!-- Baseline C -->
+                  {% if baseline_c %}
+                  <tr>
+                      <td>Baseline C (TF-IDF + LR)</td>
+                      <td class="{{ baseline_c.label }}">
+                          {{ baseline_c.label|title }}
+                      </td>
+                      <td>
+                          Confidence: {{ "%.2f"|format(baseline_c.confidence * 100) }}%
+                      </td>
+                  </tr>
+                  {% endif %}
+                  <!-- CodeBERT -->
+                  {% if codebert %}
+                  <tr>
+                      <td><strong>Deep ML (CodeBERT)</strong></td>
+                      <td class="{{ codebert.label }}">
+                          <strong>{{ codebert.label|title }}</strong>
+                      </td>
+                      <td>
+                         <small>Logits: {{ codebert.logits }}</small>
+                      </td>
+                  </tr>
+                  {% endif %}
+              </tbody>
+          </table>
+
+        <h3>Static Analysis Details</h3>
         <ul>
           {% for issue in review.issues %}
             <li>{{ issue }}</li>
           {% endfor %}
         </ul>
-
-        <h2>Summary</h2>
-        <p>{{ review.summary }}</p>
       </div>
     {% endif %}
   </div>
