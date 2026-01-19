@@ -607,82 +607,176 @@ So now there is:
 
 
 
-# Week 13 – Training Pipeline, Baselines (A, B, C), and TF-IDF
 
-This week I focused on what happens **after the data preparation stage** and how the different baselines fit into the overall training and evaluation pipeline.
+## Week 13 – Training Pipeline and Baselines (A, B, C)
 
-Once `prepare_data.py` finishes, the **test set is locked**.  
-From this point onward:
-
-- never train on `test.csv`
-- never look at test labels during training
-- the test set represents the **final exam**, not part of studying
-
-This follows the golden rule of machine learning and prevents data leakage.
+This week focused on what happens **after data preparation** and how the different baselines fit into the overall training and evaluation pipeline. Once `prepare_data.py` completes, the dataset split becomes final and the **test set is locked**. From this point onward, the test data is never used during training, and test labels are never inspected. This ensures that all evaluation results remain fair and unbiased.
 
 ---
 
-## Why Baselines Exist
+## Purpose of Baselines
 
-The purpose of baselines is to answer one key question:
+The baselines are included to answer a critical research question:
 
-**Is CodeBERT actually good, or does it just look good?**
+**Is CodeBERT genuinely effective, or does it only appear strong without proper comparison?**
 
-Baselines provide weaker reference systems so that any improvement achieved by CodeBERT is meaningful and measurable.
-
----
-
-## Baseline A – Static Analysis (Bandit Only)
-
-Baseline A uses **Bandit** to scan code for security vulnerabilities and risky patterns such as `eval()` and `exec()`.
-
-I intentionally disabled **Flake8** for this baseline. Flake8 mainly detects syntax and formatting issues, and since the dataset contains many syntax-level bugs, including it would artificially inflate accuracy. This would allow the system to solve the task without learning.
-
-Using Bandit only makes this baseline a more fair **security-focused** reference.
+By evaluating CodeBERT against simpler and more traditional approaches, the project demonstrates whether improvements come from real semantic understanding rather than superficial patterns.
 
 ---
 
-## Baseline B – Keyword Matching
+### Baseline A – Static Analysis (Bandit Only)
 
-Baseline B is the simplest possible approach and relies entirely on **string matching**, with no learning involved.
+Baseline A uses **Bandit** to scan source code for security vulnerabilities and risky patterns such as `eval()` and `exec()`.
 
-Example:
+Flake8 was intentionally disabled because it mainly detects syntax and formatting issues. Since the dataset contains many syntax-level bugs, including Flake8 would artificially inflate accuracy without requiring any learning.
 
-### python: 
+Restricting this baseline to Bandit creates a fairer **security-only** comparison and prevents static tools from dominating the results.
+
+---
+
+### Baseline B – Keyword Matching
+
+Baseline B is the simplest possible approach and relies purely on string matching. It flags code as buggy if specific patterns appear.
+
+**Example:**
+
+python
 if "while True" in code:
     buggy
 
-If the exact keyword appears, the code is flagged as buggy.
-There is no context, no abstraction, and no understanding. This baseline exists purely to demonstrate how weak rule-based approaches are.
-Baseline C – TF-IDF + Logistic Regression
 
-This baseline converts source code into TF-IDF vectors and trains a Logistic Regression classifier.
+This baseline has no understanding of structure, context, or intent. It only checks for exact matches, making it intentionally weak but useful as a lower-bound reference.
 
-In this project, TF-IDF treats code as a bag of tokens and assigns higher importance to tokens that are rare across the dataset but frequent within a specific sample.
+---
 
-Examples:
+### Baseline C – TF-IDF + Logistic Regression
 
-    def, return → low importance
+Baseline C is a classical machine-learning approach that converts source code into numerical features using TF-IDF and then trains a Logistic Regression classifier. This baseline represents a middle ground between simple heuristics and deep learning models.
 
-    eval, exec, while True → higher importance
+---
 
-Limitations of TF-IDF
+### Baseline C: How It Works (Simple Explanation)
 
-TF-IDF suffers from several fundamental limitations:
+### 1. TF-IDF: Converting Code to Numbers
 
-    token order is ignored
+First, the model looks at the code and counts important words. It does not understand code like a human; instead, it converts the source code into a large table of numbers.
 
-    no semantic or contextual understanding
+* **TF (Term Frequency):** How often does a word (such as `eval`, `while`, or `exec`) appear in this file?
+* **IDF (Inverse Document Frequency):** How rare is this word across all files?
 
-    1 - 2 and 2 - 1 can look similar
+Common words like `import` receive a low score, while rare or suspicious words receive a higher score.
 
-    short code snippets often contain too little lexical information
+---
 
-As a result, the TF-IDF + Logistic Regression model sometimes misclassifies very short or trivial code samples. When feature information is sparse, the classifier tends to fall back to dataset-level statistical bias, producing near-random predictions with confidence close to 50%.
-Why TF-IDF Is Still Important
+### 2. Logistic Regression: Assigning Weights
 
-Although TF-IDF cannot capture program semantics, it is included as a classical machine learning baseline. Its purpose is not to understand code correctly, but to highlight the limitations of bag-of-words representations when applied to source code.
+This is the step where the model “draws the line.” During training, logistic regression learns a weight for every word.
 
-Even with careful preprocessing and calibration, TF-IDF remains significantly inferior to transformer-based models. In contrast, CodeBERT can correctly classify such cases by leveraging contextual embeddings and learned programming language semantics.
+**Positive weights (indicating buggy code):**
 
-This makes Baseline C a critical reference point and sets up a fair and meaningful comparison for evaluating CodeBERT.
+* `eval` → +5.2
+* `exec` → +4.8
+* `shell` → +3.1
+
+**Negative weights (indicating clean code):**
+
+* `def` → −1.2
+* `return` → −0.8
+* `class` → −0.5
+
+Words commonly found in buggy code push the score up, while words common in clean code push it down.
+
+---
+
+### 3. The Math: “Drawing the Line”
+
+To classify a new piece of code, the model calculates a total score:
+
+```
+Score = (TF-IDF of `eval` × 5.2) + (TF-IDF of `def` × -1.2) + ...
+```
+
+* The decision line is at **0**
+* If `Score > 0`, the code is predicted as **BUGGY**
+* If `Score < 0`, the code is predicted as **CLEAN**
+
+In simple terms, “drawing the line” means finding the right set of weights so that buggy code ends up on one side of the line and clean code on the other.
+
+---
+
+## Limitations of Baseline C
+
+Despite being more powerful than simple heuristics, Baseline C has important limitations. It ignores token order and context, meaning expressions such as `1 - 2` and `2 - 1` may appear similar. It also struggles with very short or trivial code snippets, where limited lexical information leads to sparse feature vectors.
+
+In such cases, predictions may approach random behaviour, with confidence close to 50%. This highlights a key limitation of bag-of-words approaches: they cannot capture program semantics.
+
+---
+
+## Motivation for CodeBERT
+
+Baseline C is not designed to truly understand code. Its role is to act as a strong classical machine-learning baseline that exposes the limits of token-frequency-based representations.
+
+The consistent performance gap between Baseline C and CodeBERT demonstrates the necessity of transformer-based models that leverage contextual embeddings and learned programming language semantics.
+
+
+
+
+## Week 14 – CodeBERT, Evaluation, EDA, Error Analysis, and Flask Demo
+
+This week I focused on the deep learning part of the project and the full evaluation pipeline. I also completed the analysis scripts that support the final results and reporting.
+
+### CodeBERT (Deep Learning Model)
+
+CodeBERT is a pre-trained deep learning model trained on millions of source code examples across multiple programming languages. In this project, I did not train CodeBERT from scratch. Instead, I fine-tuned it for my specific task, which is classifying code as **buggy** or **fixed**.
+
+In my implementation, CodeBERT works as follows:
+- Code is tokenized using **Byte Pair Encoding (BPE)**
+- Token order and context are preserved
+- The model is fine-tuned using `train.csv`
+- Validation is performed using `val.csv`
+- The trained model is saved as `codebert_finetuned`
+
+Unlike TF-IDF, CodeBERT understands context. For example, it can detect that changing `+` to `-` alters program behaviour, not just the token value.
+
+### Evaluation (evaluate_final.py)
+
+To produce reliable and reproducible results, I used a dedicated evaluation script called `evaluate_final.py`. This script:
+- Loads the locked `test.csv`
+- Runs all models (baselines and CodeBERT)
+- Computes the following metrics:
+  - Accuracy
+  - Precision
+  - Recall
+  - F1-score
+- Saves all results to `evaluation_results.csv`
+
+This ensures that all reported results are generated in a controlled and fair manner.
+
+### Exploratory Data Analysis (generate_eda.py)
+
+EDA was used only to understand the dataset, not for training. The analysis showed that:
+- The dataset is balanced between buggy and fixed samples
+- Code length distributions are similar for both classes
+- No trivial shortcuts exist in the data
+
+This confirms that the classification task is non-trivial.
+
+### Error Analysis (error_analysis.py)
+
+Error analysis was used to examine model mistakes. The script:
+- Saves misclassified samples
+- Helps identify failure patterns
+- Supports discussion of model limitations in the report
+
+The test set was never used for retraining.
+
+### Flask Web Application (Demo Only)
+
+Finally, all models were integrated into a Flask web application. The web app:
+- Runs all models on user-submitted code
+- Displays predictions side-by-side
+- Visualises differences between approaches
+
+The Flask application is used **only for demonstration purposes**. All official results reported in the project are produced by the evaluation scripts, not the web interface.
+
+**Table X** presents the complete end-to-end pipeline of the proposed automated code review system, showing how raw buggy and fixed code samples flow through data preparation, baseline models, classical machine-learning methods, and transformer-based semantic analysis to produce final predictions and evaluation results.
