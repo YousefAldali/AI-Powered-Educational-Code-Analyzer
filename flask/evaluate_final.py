@@ -1,21 +1,3 @@
-"""
-Enhanced evaluation script with statistical testing.
-
-This script evaluates all models more thoroughly than just checking accuracy.
-It includes:
-1. Confusion matrices for all models
-2. Per-class performance metrics
-3. Cross-validation with confidence intervals
-4. Statistical significance testing using McNemar's test
-5. Performance comparison tables
-
-Why we need this:
-- Just looking at accuracy can be misleading
-- Confidence intervals help us understand if results are reliable
-- Statistical tests prove the differences aren't just random
-- Confusion matrices show us what kinds of errors each model makes
-"""
-
 import os
 import json
 import numpy as np
@@ -32,6 +14,8 @@ from transformers import RobertaTokenizer, RobertaForSequenceClassification
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
+
 # Import baselines
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -43,27 +27,25 @@ def load_test_data():
     df = pd.read_csv(path)
     df['text'] = df['text'].astype(str).fillna('')
     return df
-
+# Run Baseline A (Static Analysis)
 def evaluate_baseline_a(df):
-    """Run Baseline A (Static Analysis)"""
     preds = []
     for code in df['text']:
         res = run_static_analysis(code)
         pred = 1 if res['issues'] else 0
         preds.append(pred)
     return np.array(preds)
+# Run Baseline B (Keyword Matching)
 
 def evaluate_baseline_b(df):
-    """Run Baseline B (Keyword Matching)"""
     preds = []
     for code in df['text']:
         res = run_keyword_baseline(code)
         pred = 1 if res['label'] == 'buggy' else 0
         preds.append(pred)
     return np.array(preds)
-
+# Run Baseline C (TF-IDF + Logistic Regression)
 def evaluate_baseline_c(df):
-    """Run Baseline C (TF-IDF + Logistic Regression)"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(base_dir, "models", "baseline_c_tfidf_lr.pkl")
     
@@ -74,9 +56,8 @@ def evaluate_baseline_c(df):
     model = joblib.load(model_path)
     preds = model.predict(df['text'])
     return np.array(preds)
-
+# Run CodeBERT
 def evaluate_codebert(df):
-    """Run CodeBERT model"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(base_dir, "models", "codebert_finetuned")
     
@@ -101,9 +82,8 @@ def evaluate_codebert(df):
             preds.append(pred)
     
     return np.array(preds)
-
+# Calculate metrics
 def calculate_metrics(y_true, y_pred, model_name):
-    """Calculate all performance metrics for a model"""
     acc = accuracy_score(y_true, y_pred)
     p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='binary')
     
@@ -126,8 +106,8 @@ def calculate_metrics(y_true, y_pred, model_name):
         "F1_Buggy": f1_per_class[1],
     }
 
+# Plot confusion matrix
 def plot_confusion_matrix(y_true, y_pred, model_name, save_path):
-    """Create and save confusion matrix plot"""
     cm = confusion_matrix(y_true, y_pred)
     
     plt.figure(figsize=(8, 6))
@@ -142,9 +122,8 @@ def plot_confusion_matrix(y_true, y_pred, model_name, save_path):
     plt.close()
     
     return cm
-
+# McNemar's test
 def mcnemar_test_wrapper(y_true, pred_a, pred_b):
-    """Run McNemar's test to check if two models are significantly different"""
     n01 = np.sum((pred_a != y_true) & (pred_b == y_true))
     n10 = np.sum((pred_a == y_true) & (pred_b != y_true))
     table = np.array([[0, n01], [n10, 0]])
