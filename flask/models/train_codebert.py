@@ -126,78 +126,79 @@ def eval_model(model, data_loader, device):
     return correct_predictions.float() / len(data_loader.dataset), np.mean(losses), all_labels, all_preds
 
 def main():
-    print("=" * 60)
-    print("CodeBERT Training Script")
-    print("=" * 60)
-
-    # Device configuration
+    # Setup device
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    print(f"Using device: {device}")
-
+    
+    print("\nCodeBERT Training Script\n")
+    print(f"Using device: {device}\n")
+    
     # Load data
-    print("\n1. Loading Data...")
+    print("Loading data...")
     X_train, y_train = load_data('train')
     X_val, y_val = load_data('val')
-    print(f"   Train samples: {len(X_train)}")
-    print(f"   Val samples: {len(X_val)}")
-
-    # Tokenizer
-    print("\n2. Initializing CodeBERT...")
+    print(f"  Train samples: {len(X_train)}")
+    print(f"  Val samples: {len(X_val)}")
+    
+    # Initialize model
+    print("\nInitializing CodeBERT...")
     tokenizer = RobertaTokenizer.from_pretrained(MODEL_NAME)
-    model = RobertaForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=2)
+    model = RobertaForSequenceClassification.from_pretrained(
+        MODEL_NAME,
+        num_labels=2,
+        problem_type="single_label_classification"
+    )
     model = model.to(device)
-
-    # DataLoaders
+    
+    # Create datasets
     train_dataset = CodeDataset(X_train, y_train, tokenizer, MAX_LEN)
     val_dataset = CodeDataset(X_val, y_val, tokenizer, MAX_LEN)
-
+    
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
-
-    # Optimizer
-    optimizer = AdamW(model.parameters(), lr=LEARNING_RATE)
-
-    # Training Loop
-    print("\n3. Starting Training...")
+    
+    optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.01)
+    
+    # Training loop
+    print("\nStarting training...\n")
     best_accuracy = 0
-
-    save_dir = os.path.dirname(os.path.abspath(__file__))
-    model_save_path = os.path.join(save_dir, 'codebert_finetuned')
-
+    best_model_state = None
+    
     for epoch in range(EPOCHS):
-        print(f"\nEpoch {epoch + 1}/{EPOCHS}")
-        print("-" * 10)
-
-        train_acc, train_loss = train_epoch(
-            model,
-            train_loader,
-            optimizer,
-            device
-        )
-
-        print(f"Train loss {train_loss} accuracy {train_acc}")
-
-        val_acc, val_loss, val_labels, val_preds = eval_model(
-            model,
-            val_loader,
-            device
-        )
-
-        print(f"Val   loss {val_loss} accuracy {val_acc}")
-
+        print(f"Epoch {epoch + 1}/{EPOCHS}")
+        
+        # Train
+        model.train()
+        train_acc, train_loss = train_epoch(model, train_loader, optimizer, device)
+        
+        # Validate
+        model.eval()
+        val_acc, val_loss, val_labels, val_preds = eval_model(model, val_loader, device)
+        
+        print(f"  Train loss: {train_loss:.4f}, accuracy: {train_acc:.4f}")
+        print(f"  Val loss:   {val_loss:.4f}, accuracy: {val_acc:.4f}")
+        
+        # Save best model
         if val_acc > best_accuracy:
-            print("=> Validation accuracy improved. Saving model...")
-            model.save_pretrained(model_save_path)
-            tokenizer.save_pretrained(model_save_path)
+            print("  --> Validation accuracy improved. Saving model...")
             best_accuracy = val_acc
-
-    print("\n" + "=" * 60)
-    print("Training Complete!")
-    print(f"Best Validation Accuracy: {best_accuracy:.2%}")
+            best_model_state = model.state_dict()
+    
+    # Save final model
+    print("\nTraining complete!")
+    print(f"Best validation accuracy: {best_accuracy:.2%}")
+    
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    model_save_path = os.path.join(base_dir, "models", "codebert_finetuned")
+    os.makedirs(model_save_path, exist_ok=True)
+    
+    model.load_state_dict(best_model_state)
+    model.save_pretrained(model_save_path)
+    tokenizer.save_pretrained(model_save_path)
+    
     print(f"Model saved to: {model_save_path}")
-
-    # Final Evaluation Report
-    print("\nClassification Report (Best Model on Val Set):")
+    
+    # Final evaluation
+    print("\nClassification report (best model on validation set):")
     print(classification_report(val_labels, val_preds, target_names=['Clean', 'Buggy']))
 
 if __name__ == "__main__":
