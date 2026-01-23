@@ -70,7 +70,7 @@ def run_static_analysis(code_content: str) -> Dict[str, Any]:
             os.remove(temp_path)
 
     summary = (
-        "Your code looks clean! No static analysis issues found."
+        "No security issues found."
         if not issues
         else f"Found {len(issues)} issues to review. Use the explanations below to improve."
     )
