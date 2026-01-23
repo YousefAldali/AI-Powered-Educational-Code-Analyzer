@@ -1,31 +1,3 @@
-"""
-Data Preparation Script with Anti-Leakage Guarantees
-
-CRITICAL: This script prevents data leakage by splitting on Problem IDs, not rows.
-
-Dataset Structure:
-- Each Problem ID has TWO versions: buggy code and fixed code
-- These versions are nearly identical (e.g., only 1-2 tokens different)
-- If buggy and fixed versions appear in different splits, the model can "cheat"
-  by memorizing near-duplicate patterns instead of learning bug detection
-
-Anti-Leakage Strategy:
-1. Extract unique Problem IDs
-2. Shuffle IDs with fixed random seed (42) for reproducibility
-3. Split IDs into 80% train, 10% val, 10% test
-4. For each ID, BOTH buggy and fixed versions go to the SAME split
-5. Verify no ID overlap between splits (assertions)
-
-This ensures train/val/test are truly independent, preventing inflated metrics.
-
-Labels:
-- Buggy code: label = 1
-- Fixed code: label = 0
-
-Random Seed: 42 (for reproducibility)
-Split Ratio: 80% train, 10% validation, 10% test
-"""
-
 import pandas as pd
 import os
 import random
