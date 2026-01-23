@@ -1,0 +1,33 @@
+{
+  "model_name": "microsoft/codebert-base",
+  "model_type": "RoBERTa-based Transformer",
+  "num_parameters": "125M",
+  "num_layers": 12,
+  "hidden_size": 768,
+  "num_attention_heads": 12,
+  "learning_rate": 2e-05,
+  "batch_size": 8,
+  "num_epochs": 3,
+  "max_length": 128,
+  "random_seed": 42,
+  "optimizer": "AdamW",
+  "weight_decay": 0.01,
+  "adam_epsilon": 1e-08,
+  "dropout": 0.1,
+  "early_stopping": true,
+  "early_stopping_metric": "validation_accuracy",
+  "tokenizer": "RoBERTa BPE",
+  "vocab_size": 50265,
+  "truncation": true,
+  "padding": "max_length",
+  "num_labels": 2,
+  "label_0": "Clean Code",
+  "label_1": "Buggy Code",
+  "device": "mps/cpu",
+  "notes": [
+    "Conservative hyperparameters to prevent overfitting",
+    "3 epochs sufficient with pre-trained weights",
+    "Early stopping based on validation accuracy",
+    "No hyperparameter tuning performed (future work)"
+  ]
+}
