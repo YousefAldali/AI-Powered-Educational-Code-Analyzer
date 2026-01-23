@@ -60,12 +60,10 @@ def evaluate_model(model, X_test, y_test):
 
 
 def main():
-    print("=" * 60)
-    print("Baseline C Training Script (Real Data)")
-    print("=" * 60)
+    print("\nBaseline C Training Script\n")
 
     # Load datasets
-    print("\n1. Loading datasets...")
+    print("Loading datasets...")
     try:
         X_train, y_train = load_data('train')
         X_val, y_val = load_data('val')
@@ -73,14 +71,14 @@ def main():
         print(f"Error loading data: {e}")
         return
 
-    print(f"   Training samples: {len(X_train)}")
-    print(f"   Validation samples: {len(X_val)}")
+    print(f"  Training samples: {len(X_train)}")
+    print(f"  Validation samples: {len(X_val)}")
     
     # Class distribution
-    print(f"   Train Class Dist: Clean={y_train.count(0)}, Buggy={y_train.count(1)}")
+    print(f"  Train class distribution: Clean={y_train.count(0)}, Buggy={y_train.count(1)}")
 
     # Train model
-    print("\n2. Training model...")
+    print("\nTraining model...")
     # Get the path relative to the baselines directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
     flask_root = os.path.dirname(script_dir)
@@ -88,13 +86,11 @@ def main():
     model = train_baseline_c(X_train, y_train, model_path)
 
     # Evaluate model
-    print("\n3. Evaluating on Validation Set...")
+    print("\nEvaluating on validation set...")
     accuracy = evaluate_model(model, X_val, y_val)
 
-    print("\n" + "=" * 60)
-    print("Training complete!")
-    print("=" * 60)
-    print(f"The model is saved at: {model_path}")
+    print("\nTraining complete!")
+    print(f"Model saved at: {model_path}\n")
 
 if __name__ == "__main__":
     main()
