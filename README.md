@@ -610,6 +610,24 @@ So now there is:
 
 ## Week 13 – Training Pipeline and Baselines (A, B, C)
 
+Link: 
+(Baseline A,B,C)
+https://mdpi-res.com/entropy/entropy-22-01057/article_deploy/entropy-22-01057.pdf?version=1600699607
+
+https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=10820528&tag=1
+
+https://dl.acm.org/doi/pdf/10.1145/3695993
+
+https://arxiv.org/abs/2505.17928
+
+https://ieeexplore.ieee.org/document/10799479
+
+https://link.springer.com/content/pdf/10.1007/s11265-022-01740-z.pdf
+
+https://consensus.app/papers/details/29216b9524965df9898bc90b754b9f8e/?utm_source=share&utm_medium=clipboard
+
+
+
 This week focused on what happens **after data preparation** and how the different baselines fit into the overall training and evaluation pipeline. Once `prepare_data.py` completes, the dataset split becomes final and the **test set is locked**. From this point onward, the test data is never used during training, and test labels are never inspected. This ensures that all evaluation results remain fair and unbiased.
 
 ---
@@ -706,6 +724,8 @@ In simple terms, “drawing the line” means finding the right set of weights s
 
 ## Limitations of Baseline C
 
+
+
 Despite being more powerful than simple heuristics, Baseline C has important limitations. It ignores token order and context, meaning expressions such as `1 - 2` and `2 - 1` may appear similar. It also struggles with very short or trivial code snippets, where limited lexical information leads to sparse feature vectors.
 
 In such cases, predictions may approach random behaviour, with confidence close to 50%. This highlights a key limitation of bag-of-words approaches: they cannot capture program semantics.
@@ -779,4 +799,4 @@ Finally, all models were integrated into a Flask web application. The web app:
 
 The Flask application is used **only for demonstration purposes**. All official results reported in the project are produced by the evaluation scripts, not the web interface.
 
-**Table X** presents the complete end-to-end pipeline of the proposed automated code review system, showing how raw buggy and fixed code samples flow through data preparation, baseline models, classical machine-learning methods, and transformer-based semantic analysis to produce final predictions and evaluation results.
+
