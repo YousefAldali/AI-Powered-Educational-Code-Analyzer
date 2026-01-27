@@ -9,8 +9,24 @@ def prepare_data():
     splits_dir = os.path.join(base_dir, 'splits')
     os.makedirs(splits_dir, exist_ok=True)
 
-    print(f"Reading data from {raw_path}...")
-    df = pd.read_csv(raw_path)
+    print("Reading data...")
+    raw_files = [
+        os.path.join(base_dir, 'raw', 'code_bug_fix_pairs.csv'),    # Python data
+        os.path.join(base_dir, 'raw', 'java_bug_fix_pairs.csv')     # Java data (if exists)
+    ]
+    
+    dfs = []
+    for path in raw_files:
+        if os.path.exists(path):
+            print(f"  - Loaded {os.path.basename(path)}")
+            dfs.append(pd.read_csv(path))
+        else:
+            print(f"  - Warning: {os.path.basename(path)} not found (skipping)")
+            
+    if not dfs:
+        raise FileNotFoundError("No raw data files found in flask/data/raw/")
+        
+    df = pd.concat(dfs, ignore_index=True)
 
     # STRICT SEPARATION: Split by ID, NOT by row.
     unique_ids = list(df['id'].unique())
