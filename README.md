@@ -800,3 +800,102 @@ Finally, all models were integrated into a Flask web application. The web app:
 The Flask application is used **only for demonstration purposes**. All official results reported in the project are produced by the evaluation scripts, not the web interface.
 
 
+
+# Week 15 – Testing, Validation, and System Flow
+
+This week focused on testing the complete system end-to-end and formalising the design using flowcharts. At this stage, the project moves from isolated components to a fully connected and validated system. The main objective was to clearly demonstrate how data flows through the system, how models are trained and evaluated, and why the results are scientifically valid.
+
+## Overall System Pipeline
+
+The automated code review system starts with paired buggy–fixed code samples collected from Kaggle. These pairs are then processed using a leakage-safe data preparation strategy based on problem IDs, ensuring that related buggy and fixed versions are never split across training and testing.
+
+Multiple baselines are evaluated alongside a transformer-based model to provide a fair comparison. These include static analysis, rule-based heuristics, and a classical machine-learning approach using TF-IDF and Logistic Regression. The strongest model, CodeBERT, is fine-tuned specifically for the bug-detection task. All models are evaluated using standard classification metrics, and their outputs are made available through a user-facing web interface.
+
+## System Design and Workflow
+
+The system is organised around two complementary workflows:
+
+1. **The user interaction and execution flow**, which describes how users interact with the system.
+2. **The model training and evaluation pipeline**, which governs how data is processed and models are assessed.
+
+Separating these workflows ensures that the system is both usable in practice and methodologically correct from a machine-learning perspective.
+
+### 1. User Interaction Flow (AI Code Review System)
+
+The user interaction flow begins when a student opens the web dashboard and provides source code. Code can be supplied either by uploading a file (Python or Java) or by pasting code directly into the editor.
+
+A strict input validation step ensures that only supported formats are accepted. If validation fails, the system immediately returns an error message and prevents invalid input from reaching the backend. Once valid input is confirmed, the system naturally detects the programming language and initiates the analysis.
+
+The backend then executes a hybrid analysis pipeline consisting of:
+
+* Static analysis
+* Rule-based heuristics
+* Classical machine-learning models
+* A fine-tuned CodeBERT model
+
+Results from all models are aggregated and presented through a structured dashboard. This includes a model comparison table, detected issues with explanations, and suggested improvements. After reviewing the output, the user may analyse another piece of code, at which point the process correctly loops back to the input stage.
+
+### 2. Model Training and Evaluation Pipeline
+
+The training pipeline begins by loading the raw Kaggle dataset containing paired buggy and fixed code samples. Before any training occurs, a dedicated data preparation and quality-control stage is applied. This stage removes duplicates, mitigates data leakage, and performs basic code cleaning and tokenisation.
+
+This step is critical because buggy and fixed versions of the same code are often nearly identical. If handled incorrectly, models could memorise patterns and achieve artificially high accuracy.
+
+After preparation, the dataset is split into:
+
+* 80% training
+* 10% validation
+* 10% test
+
+Labels are assigned consistently, where clean code is labelled as 0 and buggy or insecure code is labelled as 1.
+
+### 3. Parallel Model Configuration and Training
+
+Four models are configured and evaluated in parallel:
+
+* **Baseline A – Static Analysis**: Security-focused tools that are configured once and do not involve learning.
+* **Baseline B – Rule-Based Keywords**: Manually defined patterns targeting risky constructs such as eval() or infinite loops.
+* **Baseline C – Classical Machine Learning**: TF-IDF vectorisation followed by Logistic Regression.
+* **CodeBERT – Transformer-Based Model**: A pre-trained model fine-tuned on the prepared dataset.
+
+Only Baseline C and CodeBERT are trainable models. Static analysis and rule-based baselines are intentionally excluded from optimisation loops because they do not learn from data.
+
+### 4. Validation Loop and Model Optimisation
+
+After training, the machine-learning models are evaluated on the validation set. This stage is used exclusively for hyperparameter tuning and model selection.
+
+If validation performance is not satisfactory, the pipeline loops back to the training stage. This allows adjustments such as:
+
+* Hyperparameter tuning for Baseline C
+* Fine-tuning configuration changes for CodeBERT
+
+This iterative loop reflects standard machine-learning practice and ensures that the test set remains untouched until final evaluation. Static baselines are excluded from this loop because they are non-trainable.
+
+Once validation performance is acceptable, all four models are frozen and evaluated exactly once on the locked test set.
+
+### 5. Evaluation, Analysis, and Deployment
+
+Final evaluation includes accuracy, precision, recall, F1-score, and confusion matrices. In addition to aggregate metrics, an error analysis stage examines false positives and false negatives to better understand model behaviour and limitations.
+
+Visualisations such as ROC curves and heatmaps are generated to support comparative analysis. Rather than selecting models dynamically at runtime, the comparison is used analytically to justify why CodeBERT outperforms simpler baselines.
+
+All models are then deployed within the Flask web application, allowing users to compare outputs interactively. The pipeline concludes with the generation of the final project report, documenting methodology, experiments, and findings.
+
+## Ablation Study on CodeBERT Fine-Tuning
+
+An ablation study was conducted to isolate the effect of task-specific fine-tuning. Two configurations were compared:
+
+* A pre-trained CodeBERT model used without fine-tuning
+* The same model fine-tuned on the bug-detection dataset
+
+Both configurations used the same architecture, evaluation protocol, and locked test set. The pre-trained model achieved 50% accuracy and 0% F1, indicating that it failed to detect buggy code and defaulted to predicting all samples as clean. In contrast, the fine-tuned model achieved 95% accuracy and approximately 95% F1, correctly identifying the majority of buggy samples.
+
+This demonstrates that CodeBERT’s effectiveness depends critically on task-specific fine-tuning, rather than pre-training alone.
+
+## OLD vs NEW Evaluation (Clarification)
+
+The old version of the system lacked hyperparameter tuning, ablation studies, statistical testing, and detailed error analysis. Although the models were functional, the results were harder to defend academically.
+
+The new version includes documented leakage prevention, extensive hyperparameter tuning, results from a formal ablation study, confusion matrices for all models, statistical significance testing, and full reproducibility. The reported numbers are real outputs generated by the evaluation scripts, not estimated values.
+
+This final version represents a scientifically valid, reproducible, and defensible system, suitable for both practical deployment and academic evaluation.
