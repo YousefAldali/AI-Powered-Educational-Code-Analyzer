@@ -4,6 +4,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import RobertaTokenizer, RobertaForSequenceClassification
 from torch.optim import AdamW
+from transformers import get_linear_schedule_with_warmup
 from sklearn.metrics import accuracy_score, classification_report
 import numpy as np
 import random
@@ -19,10 +20,10 @@ def set_seed(seed=42):
 set_seed(42)
 
 # Configuration
-BATCH_SIZE = 8
-EPOCHS = 3
+BATCH_SIZE = 4   # Reduced for MAX_LEN=512 (GPU memory)
+EPOCHS = 5       # Increased for better learning
 LEARNING_RATE = 2e-5
-MAX_LEN = 128
+MAX_LEN = 512
 MODEL_NAME = "microsoft/codebert-base"
 
 def load_data(split_name):
@@ -91,6 +92,8 @@ def train_epoch(model, data_loader, optimizer, device, scheduler=None):
 
         loss.backward()
         optimizer.step()
+        if scheduler:
+            scheduler.step()
         optimizer.zero_grad()
 
     return correct_predictions.float() / len(data_loader.dataset), np.mean(losses)
@@ -158,6 +161,27 @@ def main():
     
     optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.01)
     
+    # Learning rate scheduler with warmup
+    total_steps = len(train_loader) * EPOCHS
+    warmup_steps = int(total_steps * 0.1)  # 10% warmup
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=warmup_steps,
+        num_training_steps=total_steps
+    )
+    print(f"  Total training steps: {total_steps}")
+    print(f"  Warmup steps: {warmup_steps}")
+    
+    # Class weights to handle imbalance (fixes Buggy bias)
+    from collections import Counter
+    label_counts = Counter(y_train)
+    total = len(y_train)
+    class_weights = torch.tensor([
+        total / (2 * label_counts[0]),  # Weight for Clean (label 0)
+        total / (2 * label_counts[1])   # Weight for Buggy (label 1)
+    ], dtype=torch.float).to(device)
+    print(f"  Class weights: Clean={class_weights[0]:.3f}, Buggy={class_weights[1]:.3f}")
+    
     # Training loop
     print("\nStarting training...\n")
     best_accuracy = 0
@@ -168,7 +192,7 @@ def main():
         
         # Train
         model.train()
-        train_acc, train_loss = train_epoch(model, train_loader, optimizer, device)
+        train_acc, train_loss = train_epoch(model, train_loader, optimizer, device, scheduler)
         
         # Validate
         model.eval()
