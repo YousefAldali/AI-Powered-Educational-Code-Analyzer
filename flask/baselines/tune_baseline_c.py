@@ -1,4 +1,17 @@
+import os
+import json
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import classification_report, make_scorer, f1_score
+import joblib
+from datetime import datetime
 
+def load_data(split_name):
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(base_dir, 'data', 'splits', f'{split_name}.csv')
     if not os.path.exists(path):
         raise FileNotFoundError(f"Data split not found: {path}")
     
@@ -19,15 +32,18 @@ def tune_baseline_c():
         ('classifier', LogisticRegression(max_iter=1000, random_state=42))
     ])
     
+    # Define hyperparameter search space
     print("\nSetting up hyperparameter search space...")
     param_grid = {
+        # TF-IDF parameters
         'tfidf__max_features': [1000, 5000, 10000],
         'tfidf__ngram_range': [(1, 1), (1, 2), (1, 3)],
         'tfidf__min_df': [1, 2, 5],
         'tfidf__max_df': [0.7, 0.9, 1.0],
         
+        # Logistic Regression parameters
         'classifier__C': [0.01, 0.1, 1.0, 10.0],
-        'classifier__penalty': ['l2'],
+        'classifier__penalty': ['l2'],  # l1 requires different solver
         'classifier__class_weight': [None, 'balanced']
     }
     
@@ -45,19 +61,21 @@ def tune_baseline_c():
     print(f"  Using 5-fold cross-validation")
     print(f"  Total fits: {total_combinations * 5}")
     
+    # Perform grid search
     print("\nStarting GridSearchCV (this will take a few minutes)...") 
     grid_search = GridSearchCV(
         pipeline,
         param_grid,
-        cv=5,
-        scoring='f1',
-        n_jobs=-1,
+        cv=5,  # 5-fold cross-validation
+        scoring='f1',  # Optimize for F1 score (balanced metric)
+        n_jobs=-1,  # Use all CPU cores
         verbose=2,
         return_train_score=True
     )
     
     grid_search.fit(X_train, y_train)
     
+    # Results
     print("\nTuning complete!\n")
     
     print(f"Best F1 Score (Cross-Validation): {grid_search.best_score_:.4f}\n")
@@ -65,12 +83,14 @@ def tune_baseline_c():
     for param, value in grid_search.best_params_.items():
         print(f"  {param}: {value}")
     
+    # Save best model
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     models_dir = os.path.join(base_dir, 'models')
     os.makedirs(models_dir, exist_ok=True)
     
     model_path = os.path.join(models_dir, 'baseline_c_tfidf_lr.pkl')
     
+    # Backup old model if it exists
     if os.path.exists(model_path):
         backup_path = os.path.join(models_dir, 'baseline_c_tfidf_lr_backup.pkl')
         os.rename(model_path, backup_path)
@@ -79,11 +99,13 @@ def tune_baseline_c():
     joblib.dump(grid_search.best_estimator_, model_path)
     print(f"Best model saved to: {model_path}")
     
+    # Save hyperparameter search results
     results_df = pd.DataFrame(grid_search.cv_results_)
     results_path = os.path.join(models_dir, 'baseline_c_tuning_results.csv')
     results_df.to_csv(results_path, index=False)
     print(f"Full results saved to: baseline_c_tuning_results.csv")
     
+    # Save best parameters as JSON for documentation
     params_dict = {
         'best_params': grid_search.best_params_,
         'best_cv_f1_score': float(grid_search.best_score_),
@@ -100,6 +122,7 @@ def tune_baseline_c():
         json.dump(params_dict, f, indent=2)
     print(f"Parameters documented in: baseline_c_best_params.json")
     
+    # Evaluate on validation set
     print("\nEvaluating on validation set...\n")
     
     X_val, y_val = load_data('val')
@@ -109,6 +132,7 @@ def tune_baseline_c():
     print("Classification Report:")
     print(classification_report(y_val, y_pred, target_names=['Clean', 'Buggy']))
     
+    # Compare to default parameters
     print("\nComparing tuned vs default parameters:\n")
     
     default_pipeline = Pipeline([
@@ -127,6 +151,10 @@ def tune_baseline_c():
     print("\nNote for academic purposes:")
     print("""
 This hyperparameter tuning makes sure we're comparing Baseline C fairly to CodeBERT.
+Without this, someone could argue that Baseline C only lost because we didn't
+configure it well, rather than because TF-IDF has fundamental limitations.
+
+The tuned parameters will be used in all our evaluations from now on.
     """)
 
 if __name__ == "__main__":
