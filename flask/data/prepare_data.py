@@ -10,23 +10,34 @@ def prepare_data():
     os.makedirs(splits_dir, exist_ok=True)
 
     print("Reading data...")
+    # Define raw files with their language labels
     raw_files = [
-        os.path.join(base_dir, 'raw', 'code_bug_fix_pairs.csv'),    # Python data
-        os.path.join(base_dir, 'raw', 'java_bug_fix_pairs.csv')     # Java data (if exists)
+        ('python_bug_fix_pairs.csv', 'python'),   # New Python dataset (PyPIBugs)
+        ('java_bug_fix_pairs.csv', 'java'),       # Java data
+        ('csharp_bug_fix_pairs.csv', 'csharp'),   # C# data
     ]
     
     dfs = []
-    for path in raw_files:
+    for filename, language in raw_files:
+        path = os.path.join(base_dir, 'raw', filename)
         if os.path.exists(path):
-            print(f"  - Loaded {os.path.basename(path)}")
-            dfs.append(pd.read_csv(path))
+            temp_df = pd.read_csv(path)
+            temp_df['language'] = language
+            print(f"  - Loaded {filename}: {len(temp_df)} pairs ({language})")
+            dfs.append(temp_df)
         else:
-            print(f"  - Warning: {os.path.basename(path)} not found (skipping)")
+            print(f"  - Warning: {filename} not found (skipping)")
             
     if not dfs:
         raise FileNotFoundError("No raw data files found in flask/data/raw/")
         
     df = pd.concat(dfs, ignore_index=True)
+    
+    # Print language distribution
+    print(f"\nLanguage distribution:")
+    for lang in df['language'].unique():
+        count = len(df[df['language'] == lang])
+        print(f"  {lang}: {count} pairs")
 
     # STRICT SEPARATION: Split by ID, NOT by row.
     unique_ids = list(df['id'].unique())
@@ -60,19 +71,22 @@ def prepare_data():
         
         samples = []
         for _, row in subset.iterrows():
+            language = row.get('language', 'python')
             # Label 1: Buggy Code
             samples.append({
                 'text': row['buggy_code'],
                 'label': 1,
                 'id': row['id'],
-                'type': 'buggy'
+                'type': 'buggy',
+                'language': language
             })
             # Label 0: Fixed Code
             samples.append({
                 'text': row['fixed_code'],
                 'label': 0,
                 'id': row['id'],
-                'type': 'fixed'
+                'type': 'fixed',
+                'language': language
             })
         return pd.DataFrame(samples)
 
