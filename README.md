@@ -1094,7 +1094,6 @@ This imbalance increases the likelihood that majority-language patterns dominate
 
 * Integrated Java and C# into the dataset pipeline
 * Cleaned and standardised all datasets under a unified schema
-* Revised the Python dataset to remove emojis and Markdown formatting
 * Executed mixed and language-specific training experiments
 * Identified the root cause of Python underperformance
 * Collected detailed runtime and evaluation diagnostics
