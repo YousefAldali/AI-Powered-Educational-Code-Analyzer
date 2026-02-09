@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import torch
 import traceback
@@ -12,21 +13,35 @@ class CodeBERTModel:
         self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
         # Load configuration
-        self.config = self._load_config()
-        self.max_length = self.config.get("max_length", 512)
+        self.max_length = 256  # Matches Augmented Training
         print(f"Using max_length: {self.max_length}")
 
-        # Check for fine-tuned model
-        finetuned_path = os.path.join(self.base_dir, "codebert_finetuned")
-        
-        if os.path.exists(finetuned_path):
-            model_path = finetuned_path
-            print(f"Loading Fine-Tuned CodeBERT from {model_path}")
+        # Import config from base_dir (flask/models)
+        try:
+            sys.path.append(self.base_dir) 
+            from codebert_config import CONFIG
+            config_model_path = CONFIG.get("model_path", "")
+        except ImportError as e:
+            print(f"Warning: Could not load codebert_config.py: {e}")
+            config_model_path = ""
+
+        # Resolve path
+        if config_model_path:
+            model_abs_path = os.path.abspath(os.path.join(self.base_dir, config_model_path))
         else:
+            model_abs_path = os.path.join(self.base_dir, "CodeBERT", "fine_tuned_model")
+
+        if os.path.exists(model_abs_path):
+            print(f"Loading Fine-Tuned CodeBERT from {model_abs_path}")
+            model_path = model_abs_path
+        else:
+            print(f"WARNING: Model not found at {model_abs_path}. Using Base CodeBERT.")
             model_path = "microsoft/codebert-base"
-            print("Loading Base CodeBERT (Not Fine-Tuned)")
 
         try:
+            self.device = torch.device("mps") if torch.backends.mps.is_available() else (torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
+            print(f"Inference Device: {self.device}")
+
             # Load tokenizer
             self.tokenizer = RobertaTokenizer.from_pretrained(model_path)
 
@@ -35,23 +50,13 @@ class CodeBERTModel:
                 model_path,
                 num_labels=2
             )
-
+            self.model.to(self.device)
             self.model.eval()
             print("CodeBERT Loaded Successfully")
         except Exception as e:
             print(f"Error loading CodeBERT: {e}")
             traceback.print_exc()
             self.model = None
-
-    def _load_config(self):
-        config_path = os.path.join(self.base_dir, "codebert_config.json")
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, 'r') as f:
-                    return json.load(f)
-            except Exception as e:
-                print(f"Warning: Could not load codebert_config.json: {e}")
-        return {}
 
     def tokenize(self, code: str):
         return self.tokenizer(
@@ -68,14 +73,16 @@ class CodeBERTModel:
             return 0, torch.tensor([0.0, 0.0])
 
         encoded = self.tokenize(code)
+        input_ids = encoded["input_ids"].to(self.device)
+        attention_mask = encoded["attention_mask"].to(self.device)
 
         with torch.no_grad():
             output = self.model(
-                input_ids=encoded["input_ids"],
-                attention_mask=encoded["attention_mask"]
+                input_ids=input_ids,
+                attention_mask=attention_mask
             )
 
         logits = output.logits
         prediction = torch.argmax(logits, dim=1).item()
 
-        return prediction, logits
+        return prediction, logits.cpu()
