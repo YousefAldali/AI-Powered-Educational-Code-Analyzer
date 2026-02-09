@@ -49,3 +49,5 @@ evaluation_results.csv
 dist/
 build/
 *.egg-info/
+*.zip
+*.json
