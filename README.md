@@ -1100,3 +1100,214 @@ This imbalance increases the likelihood that majority-language patterns dominate
 
 
 
+
+
+Alright — here’s **Week 17** rewritten in **your style** (simple, direct, like a student), and I added **real links** (copy-paste).
+
+---
+
+## Week 17 Report: Fixing the Python Problem + New Metrics (AP / AUROC)
+
+### Links (real)
+
+```txt
+RoBERTa docs (Transformers):
+https://huggingface.co/docs/transformers/en/model_doc/roberta
+
+CodeBERT model card:
+https://huggingface.co/microsoft/codebert-base
+
+CodeBERT paper (PDF):
+https://arxiv.org/pdf/2002.08155
+
+BUGLAB paper (PDF):
+https://arxiv.org/pdf/2105.12787
+
+Microsoft CodeBERT GitHub repo:
+https://github.com/microsoft/CodeBERT
+
+Muennighoff/python-bugs dataset:
+https://huggingface.co/datasets/Muennighoff/python-bugs
+
+BugLab / BUGLAB reference repo (Microsoft NeurIPS 2021):
+https://github.com/microsoft/neurips21-self-supervised-bug-detection-and-repair
+```
+
+([Hugging Face][1])
+
+---
+
+## 1) The main problem (Python is different)
+
+### What I noticed
+
+* Python bug–fix pairs are **too similar**
+* The average diff is like **2 characters**, and most are **< 10 chars**
+* Examples: `0 → 1`, `- → +`, `[0] → [1]`, `>` vs `>=`, small rename
+
+### Why this kills CodeBERT (in my setup)
+
+* I’m training CodeBERT as **sequence classification**
+* Input = whole snippet
+* Label = Buggy or Clean
+
+But in Python:
+
+* buggy and fixed look **almost identical**
+* so the model sees “same input” but **different label**
+* the bug signal is tiny and gets **drowned** by the rest of the code (and truncation)
+
+So learning becomes unstable → model just guesses / collapses to 1 class.
+
+This explains why Python was stuck at **~50%** before, while Java/C# worked normally.
+
+([Hugging Face][1])
+
+---
+
+## 2) BUGLAB idea (why I didn’t switch now)
+
+I looked at BUGLAB because it solves the exact weakness:
+
+* It can **localise the bug token**, not just “buggy/clean”
+* It uses **graph representation (data/control flow)** + a special model (GNN style)
+
+But the issue:
+
+* It needs a totally different pipeline (graph building + new training architecture)
+* It’s not a “change dataset” thing, it’s a **new system**
+* would take roughly **1–2 weeks** to implement properly in my project
+
+So for now I stayed in the CodeBERT pipeline and fixed the data + evaluation.
+
+([arXiv][2])
+
+---
+
+## 3) Experiments I ran (and what happened)
+
+### Test A : Synthetic-only (ChatGPT generated)
+
+* Time: **56 minutes**
+* Validation accuracy: **~97%**
+* Clean/Buggy balanced
+
+This looks amazing but it mainly proves:
+
+* the model learns **synthetic patterns**
+* not real-world bugs
+
+---
+
+### Test B — Real + lots of Synthetic (20k + 2.5k)
+
+This failed hard on real data:
+
+* Real accuracy goes back to **~50%**
+* The model basically learns: “synthetic style = I know it, real style = guess / bias”
+
+So this is a classic **distribution shift** problem.
+
+---
+
+### Test C — New direction: Quality > Quantity (worked)
+
+I switched strategy:
+
+* Use **curated real data** instead of huge synthetic volume
+
+Results:
+
+* Muennighoff alone (1k): val accuracy around **0.76–0.78**
+* Merged HF (1k) + cleaned real/Kaggle (1k) → **2,000 samples**
+* Peak validation: **83.75%**
+
+This was the first setup that actually generalised properly.
+
+([Hugging Face][3])
+
+---
+
+## 4) Pipeline upgrades (major improvements)
+
+This week I also fixed the *evaluation validity* and made it more “examiner-proof”:
+
+### What changed
+
+* **Leakage-safe splitting**
+
+  * split by pair ID before expanding buggy/fixed
+  * stops buggy + fixed versions leaking into different splits
+
+* **Diff-window extraction**
+
+  * only keep ±5 lines around the change
+  * removes noise + reduces truncation
+
+* **Added AP + AUROC**
+
+  * accuracy alone is not enough
+  * AP is good for bug detection ranking
+  * AUROC gives threshold-independent separability
+
+* **Checkpointing by best AP**
+
+  * saves best model for what I actually care about
+  * not just accuracy
+
+* **Error analysis outputs**
+
+  * confusion matrix plots
+  * failed cases CSV (ID + prob)
+
+---
+
+## 5) Final results (this week)
+
+### Python (after fixing pipeline)
+
+* **Accuracy: 81.05%**
+* **AP: 92.13%**
+* **AUROC: 91.27%**
+
+This basically confirms:
+
+* the “Python 50% issue” was mainly **dataset + evaluation setup**
+* not “CodeBERT is broken”
+
+---
+
+### Java (real + synthetic, after metric upgrade)
+
+* Test Accuracy: **0.7384** (earlier run)
+* After AP/AUROC training, validation metrics improved strongly (AP ~0.92+)
+* Confusion matrix + failed cases saved for report
+
+
+
+---
+
+### C# (new bundle + best-AP selection)
+
+* Validation improved over epochs
+* Best AP saved automatically (`best_ap`)
+* Final test accuracy reported: **0.6275**
+* Confusion matrix + failed cases with probabilities generated
+
+---
+
+## 6) Main conclusion (Week 17 takeaway)
+
+**Python failed before because the bug signal was too tiny (few characters), so sequence-level classification gets contradictory supervision.**
+
+The fix was:
+
+* better data (curated + cleaned)
+* better inputs (diff windows)
+* correct evaluation (leakage-safe split)
+* better metrics (AP/AUROC + best-AP checkpoints)
+
+BUGLAB is still a strong future option, but it needs a different architecture and pipeline.
+
+
+--
