@@ -5,16 +5,17 @@ import random
 def prepare_data():
     # Paths
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    raw_path = os.path.join(base_dir, 'raw', 'code_bug_fix_pairs.csv')
-    splits_dir = os.path.join(base_dir, 'splits')
+    clean_dir = os.path.join(base_dir, 'clean')
+    languages_dir = os.path.join(clean_dir, 'languages')
+    splits_dir = os.path.join(clean_dir, 'splits')
     os.makedirs(splits_dir, exist_ok=True)
 
     print("Reading data...")
-    # Define raw files with their language labels
+    # Define raw files with their language labels (path relative to raw/)
     raw_files = [
-        ('python_bug_fix_pairs.csv', 'python'),   # New Python dataset (PyPIBugs)
-        ('java_bug_fix_pairs.csv', 'java'),       # Java data
-        ('csharp_bug_fix_pairs.csv', 'csharp'),   # C# data
+        (os.path.join('languages', 'python', 'tssb_3m_cleaned.csv'), 'python'),   # Python dataset
+        (os.path.join('languages', 'java', 'java_bug_fix_pairs.csv'), 'java'),     # Java data
+        (os.path.join('languages', 'csharp', 'csharp_bug_fix_pairs.csv'), 'csharp'), # C# data
     ]
     
     dfs = []
@@ -39,9 +40,19 @@ def prepare_data():
         count = len(df[df['language'] == lang])
         print(f"  {lang}: {count} pairs")
 
+    # Save cleaned data per language into clean/languages/<lang>/
+    print("\nSaving cleaned data per language...")
+    for lang in df['language'].unique():
+        lang_dir = os.path.join(languages_dir, lang)
+        os.makedirs(lang_dir, exist_ok=True)
+        lang_df = df[df['language'] == lang].copy()
+        out_path = os.path.join(lang_dir, f'{lang}_cleaned.csv')
+        lang_df.to_csv(out_path, index=False)
+        print(f"  - Saved {lang}: {len(lang_df)} pairs -> clean/languages/{lang}/{lang}_cleaned.csv")
+
     # STRICT SEPARATION: Split by ID, NOT by row.
     unique_ids = list(df['id'].unique())
-    print(f"Found {len(unique_ids)} unique problem IDs.")
+    print(f"\nFound {len(unique_ids)} unique problem IDs.")
 
     # Shuffle IDs specifically ensuring determinism
     random.seed(42)
@@ -95,16 +106,29 @@ def prepare_data():
     val_df = create_dataset(val_ids)
     test_df = create_dataset(test_ids)
 
-    # Save to CSV
+    # Save splits to clean/splits/
     train_df.to_csv(os.path.join(splits_dir, 'train.csv'), index=False)
     val_df.to_csv(os.path.join(splits_dir, 'val.csv'), index=False)
     test_df.to_csv(os.path.join(splits_dir, 'test.csv'), index=False)
 
-    print(f"Saved splits to {splits_dir}")
+    print(f"\nSaved splits to {splits_dir}")
     print(f"Train samples: {len(train_df)}")
     print(f"Val samples: {len(val_df)}")
     print(f"Test samples: {len(test_df)}")
     
+    # Save per-language splits too
+    print("\nSaving per-language splits...")
+    for lang in df['language'].unique():
+        lang_split_dir = os.path.join(languages_dir, lang, 'splits')
+        os.makedirs(lang_split_dir, exist_ok=True)
+        lang_train = train_df[train_df['language'] == lang]
+        lang_val = val_df[val_df['language'] == lang]
+        lang_test = test_df[test_df['language'] == lang]
+        lang_train.to_csv(os.path.join(lang_split_dir, 'train.csv'), index=False)
+        lang_val.to_csv(os.path.join(lang_split_dir, 'val.csv'), index=False)
+        lang_test.to_csv(os.path.join(lang_split_dir, 'test.csv'), index=False)
+        print(f"  - {lang}: train={len(lang_train)}, val={len(lang_val)}, test={len(lang_test)}")
+
     # Generate summary report
     print("\nData Split Summary Report")
     print(f"\nRandom Seed: 42")
