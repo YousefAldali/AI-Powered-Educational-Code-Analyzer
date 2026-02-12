@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, classification_report
 
 def load_data(split_name):
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    path = os.path.join(base_dir, 'data', 'splits', f'{split_name}.csv')
+    path = os.path.join(base_dir, 'data', 'clean', 'splits', f'{split_name}.csv')
     if not os.path.exists(path):
         raise FileNotFoundError(f"Data split not found: {path}. Run prepare_data.py first.")
     
