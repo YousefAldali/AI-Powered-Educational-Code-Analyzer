@@ -1310,4 +1310,325 @@ The fix was:
 BUGLAB is still a strong future option, but it needs a different architecture and pipeline.
 
 
---
+
+
+
+
+
+
+
+# Week 18 Report
+
+# Overview
+
+This week I restructured my FYP into four clear system parts.
+
+I decided to temporarily skip **Part 1 (CodeBERT final optimisation)** and return to it later after improving the dataset quality and understanding the training behaviour better.
+
+## System Structure (4 Parts)
+
+1. **Part 1 – CodeBERT Training & Strong Baseline**
+2. **Part 2 – Educational LLM (Qwen 2.5 Coder)**
+3. **Part 3 – Adding Haskell**
+4. **Part 4 – Connecting Everything Together (Full ACRT pipeline)**
+
+---
+
+# Part 1 – CodeBERT Baseline
+
+## Research Reading
+
+Reviewed:
+
+- CodeBERT & Transformer papers
+- IBM Self-Attention explanation
+- Qwen technical reports
+- https://huggingface.co/papers/2409.12186
+- https://huggingface.co/papers/2407.10671
+- https://huggingface.co/papers/2309.00071
+
+Improvements made:
+
+- Cleaner training loop
+- Proper validation tracking
+- Saving BEST_AP checkpoints
+- Added AP & AUROC metrics
+- Improved reproducibility
+- Better shard handling
+
+---
+
+## Initial Problem – Overfitting
+
+Dataset: Small 6,000 synthetic Python samples
+
+Observed:
+
+- Fast overfitting
+- High train accuracy
+- Weak validation performance
+- Synthetic data too predictable
+- Poor syntax diversity
+
+Conclusion:
+Dataset not strong enough for real generalisation.
+
+---
+
+# Switching to Real Dataset – TSSB-3M
+
+## Initial Extraction
+
+From 3M samples:
+
+- 2,545,792 → 637,125 rows
+- 75% duplicates removed
+
+### Cleaning Summary
+
+| Cleaning Step | Removed |
+|---------------|----------|
+| Exact duplicates | 1,904,867 |
+| Too short (<10 chars) | 3,628 |
+| Too long (>2000 chars) | 33 |
+| Non-code | 139 |
+
+Final:
+- 637,125 unique rows
+- 23 bug patterns
+- 129MB CSV
+
+---
+
+## Second Cleaning Pass
+
+| Cleaning Step | Removed |
+|---------------|----------|
+| Exact duplicates | 274,391 |
+| Too short | 868 |
+| Too long | 7 |
+| Non-code | 45 |
+
+Result:
+- 453,846 → 178,535 rows
+- 39% kept
+- 38MB final dataset
+
+---
+
+# Upgrade to CTSSB-1M (Cleaner Version)
+
+Source:
+https://github.com/cedricrupb/TSSB3M
+
+Converted 10 `.jsonl.gz` files into:
+
+`ctssb_1m_raw.csv`
+
+### Raw Dataset
+
+- 966,985 records
+- Columns:
+  - id
+  - buggy_code
+  - fixed_code
+  - project
+  - commit_sha
+  - likely_bug
+  - sstub_pattern
+
+---
+
+## CTSSB Cleaning Results
+
+Initial: 966,985  
+Final Kept: 861,655  
+
+Removed:
+
+- Null values: 27
+- Duplicates: 103,912
+- Too short: 1,308
+- Too long: 83
+
+Final file:
+
+`clean/languages/python/ctssb_1m_cleaned.csv` (154MB)
+
+This is now the main Python training dataset.
+
+---
+
+# Training Strategy Fix
+
+### Old Approach (Problematic)
+
+Used both buggy and fixed per pair:
+
+```python
+samples.append(buggy)
+samples.append(fixed)
+````
+
+Issue:
+
+* 2 samples per pair
+* Potential leakage
+* Model memorisation risk
+
+---
+
+### New Approach (Corrected)
+- I said let me try a new approach but that wasnt the best idea. because it wasnt generalising well. and the model wasnt learning the bug patterns well.
+```python
+use_buggy = random.random() < 0.5
+if use_buggy:
+    samples.append(buggy)
+else:
+    samples.append(fixed)
+```
+
+Now:
+
+* 1 sample per pair
+* Reduced leakage
+* Better generalisation
+* More realistic binary setup
+
+---
+
+# CodeBERT Training Results (CTSSB-1M)
+
+Best validation:
+
+* Val Accuracy ≈ 57.7%
+* AP ≈ 0.6244
+* AUROC ≈ 0.6175
+
+Observation:
+
+* Train accuracy steadily increases
+* Validation plateaus around epoch 6–7
+* Mild overfitting after that
+
+Conclusion:
+Dataset is much harder.
+Model learning real bug patterns.
+ 
+ But I havent Teststed it in a real Code after improvments yet.
+
+---
+
+# Part 2 – Educational LLM
+
+Model used:
+
+**Qwen2.5-Coder-7B-Instruct (4-bit)**
+
+Tested on Kaggle.
+
+Successful:
+
+* Model loads correctly
+* 4-bit quantization works
+* 20 sample test completed
+* Output saved correctly
+
+---
+
+# Initial LLM Problems
+
+Observed:
+* Making More Educational Content
+* Hallucinated diffs
+* Broken formatting
+* Truncated outputs
+* Missing sections
+
+---
+
+# Major Engineering Fix  Grounded Diff Injection
+
+Implemented:
+
+* Ground truth diff injection
+* Strict format enforcement
+* Hard fallback system
+
+---
+
+## 100 Sample Evaluation
+
+Results:
+
+* Fake diff: 0
+* Format compliance: 100%
+* 93% high-quality explanations
+* 7% safe fallback
+
+Meaning:
+
+* Prompt engineering is strong
+* Diff grounding works
+* System is robust
+
+---
+
+# Next Steps
+
+## Part 1 (Return Later)
+
+* Tune CodeBERT further
+* Try diff-window input
+* Compare full snippet vs changed lines
+* Improve generalisation
+
+## Part 2
+
+* Scale LLM to larger subset
+* Qwen2.5-Coder 7B 
+* Improve hallucination handling
+* Possibly fine-tune explainer layer
+
+## Part 3
+
+* Add Haskell dataset
+* Keep system language-agnostic
+* Extend training pipeline
+
+## Part 4
+
+Integrate:
+
+* CodeBERT classifier
+* LLM explainer
+* Multi-language support
+* Final educational pipeline
+
+---
+
+# Reflection
+
+This week focused heavily on:
+
+* Dataset engineering
+* Cleaning
+* Removing duplicates
+* Fixing LLM hallucinations
+* Improving robustness
+
+The system is now transitioning from:
+
+"Experimental prototype"
+
+to
+
+"Research-pipeline".
+
+Major breakthrough:
+Educational LLM is now stable and grounded. But need a bit more improvements. next week i will try to improve it. and try it in a real dataset.
+
+---
+
+
+
