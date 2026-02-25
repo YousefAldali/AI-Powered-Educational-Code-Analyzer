@@ -1632,3 +1632,283 @@ Educational LLM is now stable and grounded. But need a bit more improvements. ne
 
 
 
+# Week 19 Report
+
+
+##  Papers & Reading This Week
+
+This week I focused on strengthening the theoretical foundation of my project before scaling experiments further.
+
+I reviewed:
+
+* CodeBERT paper
+  [https://dl.acm.org/doi/pdf/10.1145/3524842.3528505](https://dl.acm.org/doi/pdf/10.1145/3524842.3528505)
+
+* IBM – Self-Attention explanation
+  [https://www.ibm.com/think/topics/self-attention](https://www.ibm.com/think/topics/self-attention)
+
+* Qwen2.5-Coder-7B-Instruct
+  [https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct)
+
+* Recent LLM-for-code papers:
+  [https://huggingface.co/papers/2409.12186](https://huggingface.co/papers/2409.12186)
+  [https://arxiv.org/abs/2409.12186](https://arxiv.org/abs/2409.12186)
+
+  [https://huggingface.co/papers/2407.10671](https://huggingface.co/papers/2407.10671)
+  [https://arxiv.org/abs/2407.10671](https://arxiv.org/abs/2407.10671)
+
+  [https://huggingface.co/papers/2309.00071](https://huggingface.co/papers/2309.00071)
+  [https://arxiv.org/abs/2309.00071](https://arxiv.org/abs/2309.00071)
+
+* TSSB-3M repository
+  [https://github.com/cedricrupb/TSSB3M/tree/main?tab=readme-ov-file](https://github.com/cedricrupb/TSSB3M/tree/main?tab=readme-ov-file)
+
+These readings helped me better understand:
+
+* How CodeBERT is properly evaluated.
+* How self-attention works internally.
+* How modern LLMs for code are structured.
+* Why dataset quality is more important than dataset size.
+
+---
+
+#  CodeBERT – Overfitting Issue
+
+At the beginning of the week, I trained CodeBERT on a small Python dataset (~6000 samples).
+
+Observed behaviour:
+
+* Training accuracy kept increasing.
+* Validation accuracy plateaued early.
+* The model started memorising repetitive patterns like `return None`.
+
+So clearly:
+
+* The dataset was too small.
+* The synthetic patterns were too simple.
+* Or duplication was causing memorisation.
+
+This pushed me to move to a large real-world dataset.
+
+I also tested the trained model manually on different code snippets more than **8 times** this week to observe prediction stability and generalisation across different bug types.
+
+---
+
+#  TSSB-3M Dataset Cleaning
+
+I extracted the TSSB-3M dataset and performed heavy cleaning.
+
+Initial extraction:
+
+* 2,545,792 rows
+
+After cleaning:
+
+* 637,125 unique rows
+* ~75% were duplicates
+
+### Removed:
+
+| Cleaning Step          | Removed   |
+| ---------------------- | --------- |
+| Exact duplicates       | 1,904,867 |
+| Too short (<10 chars)  | 3,628     |
+| Too long (>2000 chars) | 33        |
+| Non-code entries       | 139       |
+
+This was a big realisation.
+
+If I had trained on raw 3M data, the model would likely memorise duplicated patterns instead of learning diverse bug behaviour.
+
+Further filtering reduced:
+
+* 453,846 → 178,535 rows
+* Only 39% retained
+
+This confirmed duplication is a major issue in mined datasets.
+
+---
+
+#  CTSSB-1M (Cleaner Dataset)
+
+After reviewing the dataset paper more carefully, I identified CTSSB-1M as a cleaner subset of TSSB-3M.
+
+I converted all `.jsonl.gz` files into:
+
+```
+flask/data/raw/languages/python/ctssb_1m_raw.csv
+```
+
+* 966,985 bug fixes
+* 241 MB
+
+### Cleaning Results:
+
+| Metric             | Value   |
+| ------------------ | ------- |
+| Initial records    | 966,985 |
+| Final kept         | 861,655 |
+| Duplicates removed | 103,912 |
+| Too short removed  | 1,308   |
+| Too long removed   | 83      |
+
+Final dataset:
+
+```
+clean/languages/python/ctssb_1m_cleaned.csv
+```
+
+* 154 MB
+* 861,655 high-quality samples
+
+This is now my main training dataset.
+
+Much more realistic than my previous synthetic dataset.
+
+---
+
+#  Sampling Strategy Improvement
+
+Previously:
+
+* I used BOTH buggy and fixed per pair (2 samples).
+
+Now:
+
+* I randomly select only ONE per pair.
+
+```python
+use_buggy = random.random() < 0.5
+```
+
+Why this matters:
+
+* Reduces correlation.
+* Reduces leakage.
+* Improves generalisation.
+* Lowers overfitting risk.
+
+This was an important structural change in the training pipeline.
+
+---
+
+#  CodeBERT Training Results
+
+After improving the training and evaluation code (aligned more closely with the paper and official repo structure):
+
+Best validation results around Epoch 7:
+
+* Validation Accuracy ≈ 0.577
+* Average Precision (AP) ≈ 0.624
+* AUROC ≈ 0.617
+
+After epoch 7:
+
+* Training accuracy keeps increasing.
+* Validation performance slightly drops.
+
+This indicates mild overfitting, but expected at this stage.
+
+Important point:
+The model is no longer just memorising simple patterns.
+The task is clearly non-trivial.
+
+---
+
+#  Educational LLM – First Integration
+
+Started integrating the Educational LLM stage.
+
+Model:
+
+* Qwen2.5-Coder-7B-Instruct (4-bit quantised)
+
+Platform:
+
+* Kaggle GPU
+
+Pipeline:
+
+1. Load CodeBERT predictions.
+2. Pass code + diff to LLM.
+3. Generate structured 5-section explanation.
+4. Save results to CSV.
+
+Initial testing:
+
+* 20 samples → successful.
+* Then 100 samples → successful.
+
+---
+
+#  Hallucination Issue & Fix
+
+At first, the LLM produced:
+
+* Fake diff lines.
+* Broken formatting.
+* Incomplete sections.
+* Cut code blocks.
+
+After improving prompt grounding and adding a fallback system:
+
+On 100 samples:
+
+*  100% format compliance
+*  93% high-quality grounded explanations
+*  7% handled safely by fallback
+*  0 fake diffs
+
+The fallback mechanism ensures:
+
+* No corrupted outputs.
+* No hallucinated patch lines.
+* All diffs grounded in real data.
+
+This is a major improvement in robustness.
+
+---
+
+#  Testing Summary This Week
+
+This week I:
+
+* Tested CodeBERT manually more than 8 times.
+* Ran LLM explanation on 20 samples.
+* Scaled to 100 samples.
+* Compared first and improved prompt versions.
+* Verified no fake diffs.
+* Confirmed full structured output compliance.
+
+The second version of the prompt + fallback system shows major improvement in stability and reliability.
+
+---
+
+#  Key Lessons from Week 19
+
+1. Dataset quality is more important than dataset size.
+2. Deduplication is absolutely critical.
+3. Synthetic data caused misleading overfitting.
+4. CTSSB-1M provides more realistic bug diversity.
+5. Prompt engineering directly impacts hallucination rate.
+6. Ground-truth diff injection solves fake patch generation.
+7. The pipeline is now stable enough for scaling.
+
+---
+
+
+#  Week 19 Summary
+
+Week 19 was mainly about:
+
+* Fixing dataset quality.
+* Removing large-scale duplication.
+* Improving CodeBERT training.
+* Testing the model repeatedly.
+* Successfully integrating Qwen LLM.
+* Solving hallucination issues.
+* Achieving 70% structured explanation compliance.
+
+The system now feels significantly more stable and research-level compared to previous weeks.
+
+---
