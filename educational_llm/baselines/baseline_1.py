@@ -1,19 +1,3 @@
-"""
-Baseline 1 -- Diff-Only Explanation Generator (No LLM)
-======================================================
-The simplest baseline: generates template-based explanations purely
-from the unified diff between buggy and fixed code.
-No model calls, no GPU needed.
-
-The output follows the same 5-section format as Baseline 3
-(the structured LLM explainer) so that quality metrics
-(format_ok, fake_diff, etc.) can be compared apples-to-apples.
-
-Baseline 1: Diff-Only (this file)
-Baseline 2: Zero-shot Qwen (unstructured prompt)
-Baseline 3: Structured educational prompt (run_explainer.py)
-"""
-
 import os
 import re
 import sys
@@ -25,13 +9,13 @@ from datetime import datetime
 import pandas as pd
 
 
-# ── CONFIGURATION ────────────────────────────────────────────────────
+# Configuration
 INPUT_CSV = os.path.join(os.path.dirname(__file__), "..", "data", "codebert_results_small_python.csv")
 OUTPUT_CSV = os.path.join(os.path.dirname(__file__), "..", "outputs", "baseline_1_results.csv")
 
 LIMIT_ROWS = None  # set to int for quick tests
 
-# ── LOGGING ──────────────────────────────────────────────────────────
+# Logging
 log_dir = Path(os.path.dirname(__file__)) / ".." / "outputs" / "logs"
 log_dir.mkdir(parents=True, exist_ok=True)
 log_file = log_dir / f"baseline_1_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
@@ -44,7 +28,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# ── HELPERS (same logic as run_explainer.py) ─────────────────────────
+# Helpers
 
 def decode_escaped_newlines(s: str) -> str:
     s = "" if s is None else str(s)
@@ -83,7 +67,7 @@ def extract_changed_lines(diff_text: str) -> str:
         return "(error extracting changes)"
 
 
-# ── QUALITY CHECKS (mirrors run_explainer.py) ────────────────────────
+# Quality Checks
 
 def format_ok(text: str) -> bool:
     t = str(text)
@@ -173,7 +157,7 @@ def quality_flag(explanation: str, changed_lines_full: str) -> str:
     return "ok"
 
 
-# ── TEMPLATE GENERATOR ───────────────────────────────────────────────
+# Template Generator
 
 def generate_diff_only_explanation(
     label: str,
@@ -181,14 +165,14 @@ def generate_diff_only_explanation(
     first_removed: str,
     first_added: str,
 ) -> str:
-    """Build a mechanical 5-section explanation from diff data only."""
+    # Build a mechanical 5-section explanation from diff data only.
 
     # pick a readable snippet for Section 4
     example_line = first_added if first_added else first_removed
     if not example_line:
         example_line = "(no example available)"
 
-    # format the diff lines for Section 3 (no extra indent — must match
+    # format the diff lines for Section 3 (no extra indent must match
     # ground truth exactly so the quality checker doesn't flag fake_diff)
     diff_block = "\n".join(
         ln for ln in changed_lines.splitlines() if ln.strip()
@@ -218,7 +202,7 @@ def generate_diff_only_explanation(
 - One conceptual question: Why was this particular change necessary to fix the bug?"""
 
 
-# ── MAIN ─────────────────────────────────────────────────────────────
+# Main
 
 def main():
     logger.info("Baseline 1 (Diff-Only) -- starting")
