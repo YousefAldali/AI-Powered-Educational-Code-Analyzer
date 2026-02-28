@@ -1,68 +1,88 @@
-from flask import Flask, render_template, request
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import os
-import subprocess
-import tempfile
-import json
 from models.CodeBERT.classifier import CodeClassifier
-from baselines.baseline import run_static_analysis, run_keyword_baseline, run_tfidf_baseline
+from baselines.baseline import run_static_analysis
+from models.llm.tutor import generate_educational_explanation
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]}})
 
-
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 # Later I can change this to 50MB
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
 
 classifier = CodeClassifier()
 
 
-@app.route("/", methods=["GET", "POST"])
-def index():
+@app.route("/api/review", methods=["POST"])
+def review():
     code = ""
-    review_result = None
-    baseline_b_result = None
-    baseline_c_result = None
-    codebert_result = None
+    language = "python"
 
-    if request.method == "POST":
+    # Accept either a file upload or raw JSON body
+    if request.content_type and "multipart/form-data" in request.content_type:
         file = request.files.get("file")
-        
-        if file and (file.filename.endswith(".py") or file.filename.endswith(".java")):
+        if file:
+            filename = file.filename.lower()
+            if filename.endswith(".java"):
+                language = "java"
+            elif filename.endswith(".py"):
+                language = "python"
+            else:
+                return jsonify({"error": "Only .py and .java files are supported."}), 400
             try:
                 code = file.read().decode("utf-8")
-            except:
-                review_result = {
-                    "issues": ["Could not read uploaded file"],
-                    "summary": "Upload error."
-                }
+            except Exception:
+                return jsonify({"error": "Could not read uploaded file."}), 400
         else:
             code = request.form.get("code", "")
-        
-        if code and code.strip():
-            # Baseline A
-            review_result = run_static_analysis(code)
+            language = request.form.get("language", "python")
+    else:
+        body = request.get_json(silent=True) or {}
+        code = body.get("code", "")
+        language = body.get("language", "python")
 
-            # Baseline B
-            baseline_b_result = run_keyword_baseline(code)
-            
-            # Baseline C
-            baseline_c_result = run_tfidf_baseline(code)
-            
-            # Deep ML (CodeBERT)
-            codebert_result = classifier.classify(code)
-        else:
-            review_result = {
-                "issues": ["Please submit some code or upload a file."],
-                "summary": "Empty input."
-            }
+    if not code or not code.strip():
+        return jsonify({"error": "No code provided."}), 400
 
-    return render_template(
-        "index.html",
-        code=code,
-        review=review_result,
-        baseline_b=baseline_b_result,
-        baseline_c=baseline_c_result,
-        codebert=codebert_result
-    )
+    # --- Run the analysis pipeline ---
+
+    # 1. Static Analysis (Bandit for Python)
+    static_result = run_static_analysis(code)
+    static_issues = static_result.get("issues", [])
+
+    # 2. CodeBERT deep learning prediction
+    codebert_result = classifier.classify(code)
+    is_buggy = codebert_result.get("label", "clean").lower() == "buggy"
+    codebert_confidence = codebert_result.get("confidence", None)
+
+    # 3. Educational LLM explanation (only if bugs found)
+    llm_explanation = None
+    if is_buggy or static_issues:
+        llm_explanation = generate_educational_explanation(
+            code=code,
+            language=language,
+            static_issues=static_issues,
+            codebert_label=codebert_result.get("label", "clean"),
+        )
+
+    return jsonify({
+        "prediction": {
+            "label": codebert_result.get("label", "clean"),   # "buggy" | "clean"
+            "confidence": codebert_confidence,
+        },
+        "static_analysis": {
+            "issues": static_issues,
+            "summary": static_result.get("summary", ""),
+        },
+        "educational_explanation": llm_explanation,           # Markdown string from Qwen
+        "language": language,
+    })
+
+
+@app.route("/api/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"})
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001, host="127.0.0.1")
