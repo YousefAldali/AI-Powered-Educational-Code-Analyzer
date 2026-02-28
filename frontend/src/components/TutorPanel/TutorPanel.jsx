@@ -2,7 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import styles from './TutorPanel.module.css'
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
+// Helper components for the different feedback sub-sections
 
 function Verdict({ label }) {
     const isBuggy = label?.toLowerCase() === 'buggy'
@@ -60,7 +60,7 @@ function TutorExplanation({ explanation }) {
     )
 }
 
-// ─── Loading skeleton ─────────────────────────────────────────────────────────
+// Loading animation while waiting for API
 
 function LoadingState() {
     return (
@@ -85,7 +85,7 @@ function LoadingStep({ label, delay }) {
     )
 }
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
+// Placeholder when no code is submitted yet
 
 function EmptyState() {
     return (
@@ -100,7 +100,7 @@ function EmptyState() {
     )
 }
 
-// ─── Error state ──────────────────────────────────────────────────────────────
+// Error message display
 
 function ErrorState({ message }) {
     return (
@@ -112,7 +112,7 @@ function ErrorState({ message }) {
     )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// The main panel
 
 export default function TutorPanel({ result, isLoading, error }) {
     return (
