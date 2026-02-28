@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
 import styles from './CodeEditor.module.css'
 
-/** Sniff the language from code text */
+// Figure out if they pasted Java or Python
 function detectLanguage(code) {
     if (!code) return 'python'
     if (
