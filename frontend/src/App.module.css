@@ -1,0 +1,267 @@
+.app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--bg-void);
+}
+
+/* ── Header ── */
+.header {
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+    padding: 0 28px;
+    flex-shrink: 0;
+}
+
+.headerInner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 14px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logoGlyph {
+    font-size: 1.4em;
+    color: var(--accent);
+    animation: glyph-spin 8s linear infinite;
+}
+
+@keyframes glyph-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.logoText {
+    font-family: var(--mono);
+    font-size: 1.1em;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+.logoBeta {
+    font-family: var(--mono);
+    font-size: 0.58em;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--accent-glow);
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+    padding: 2px 6px;
+    border-radius: 4px;
+    align-self: center;
+}
+
+.tagline {
+    font-size: 0.78em;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+}
+
+/* ── Main layout ── */
+.main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px 28px;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .main {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Section labels ── */
+.sectionLabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 0.68em;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.labelDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--border-bright);
+}
+
+.labelDotAccent {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+}
+
+.fileName {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    padding: 1px 8px;
+    border-radius: 4px;
+    margin-left: 4px;
+    letter-spacing: 0;
+}
+
+.editorSection,
+.tutorSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.tutorSection {
+    min-height: 560px;
+}
+
+/* ── Action bar ── */
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.submitBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    background: var(--accent);
+    color: var(--bg-void);
+    border: none;
+    border-radius: 7px;
+    font-family: var(--mono);
+    font-size: 0.8em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.submitBtn:hover:not(:disabled) {
+    background: var(--accent-dim);
+    box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.submitBtn:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.submitBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.btnIcon {
+    font-size: 0.8em;
+}
+
+.btnSpinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(2, 6, 23, 0.4);
+    border-top-color: var(--bg-void);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.uploadBtn {
+    padding: 9px 16px;
+    background: transparent;
+    border: 1px solid var(--border-bright);
+    color: var(--text-secondary);
+    border-radius: 7px;
+    font-family: var(--mono);
+    font-size: 0.75em;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.uploadBtn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.uploadBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.hiddenInput {
+    display: none;
+}
+
+/* ── Language toggle ── */
+.langToggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-left: auto;
+}
+
+.langBtn {
+    padding: 7px 14px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 0.68em;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.langBtn:hover {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+}
+
+.langBtnActive {
+    background: var(--accent-glow);
+    color: var(--accent);
+}
+
+/* ── Footer ── */
+.footer {
+    text-align: center;
+    padding: 12px;
+    font-family: var(--mono);
+    font-size: 0.65em;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+}
