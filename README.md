@@ -1632,3 +1632,658 @@ Educational LLM is now stable and grounded. But need a bit more improvements. ne
 
 
 
+# Week 19 Report
+
+
+##  Papers & Reading This Week
+
+This week I focused on strengthening the theoretical foundation of my project before scaling experiments further.
+
+I reviewed:
+
+* CodeBERT paper
+  [https://dl.acm.org/doi/pdf/10.1145/3524842.3528505](https://dl.acm.org/doi/pdf/10.1145/3524842.3528505)
+
+* IBM – Self-Attention explanation
+  [https://www.ibm.com/think/topics/self-attention](https://www.ibm.com/think/topics/self-attention)
+
+* Qwen2.5-Coder-7B-Instruct
+  [https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct)
+
+* Recent LLM-for-code papers:
+  [https://huggingface.co/papers/2409.12186](https://huggingface.co/papers/2409.12186)
+  [https://arxiv.org/abs/2409.12186](https://arxiv.org/abs/2409.12186)
+
+  [https://huggingface.co/papers/2407.10671](https://huggingface.co/papers/2407.10671)
+  [https://arxiv.org/abs/2407.10671](https://arxiv.org/abs/2407.10671)
+
+  [https://huggingface.co/papers/2309.00071](https://huggingface.co/papers/2309.00071)
+  [https://arxiv.org/abs/2309.00071](https://arxiv.org/abs/2309.00071)
+
+* TSSB-3M repository
+  [https://github.com/cedricrupb/TSSB3M/tree/main?tab=readme-ov-file](https://github.com/cedricrupb/TSSB3M/tree/main?tab=readme-ov-file)
+
+These readings helped me better understand:
+
+* How CodeBERT is properly evaluated.
+* How self-attention works internally.
+* How modern LLMs for code are structured.
+* Why dataset quality is more important than dataset size.
+
+---
+
+#  CodeBERT – Overfitting Issue
+
+At the beginning of the week, I trained CodeBERT on a small Python dataset (~6000 samples).
+
+Observed behaviour:
+
+* Training accuracy kept increasing.
+* Validation accuracy plateaued early.
+* The model started memorising repetitive patterns like `return None`.
+
+So clearly:
+
+* The dataset was too small.
+* The synthetic patterns were too simple.
+* Or duplication was causing memorisation.
+
+This pushed me to move to a large real-world dataset.
+
+I also tested the trained model manually on different code snippets more than **8 times** this week to observe prediction stability and generalisation across different bug types.
+
+---
+
+#  TSSB-3M Dataset Cleaning
+
+I extracted the TSSB-3M dataset and performed heavy cleaning.
+
+Initial extraction:
+
+* 2,545,792 rows
+
+After cleaning:
+
+* 637,125 unique rows
+* ~75% were duplicates
+
+### Removed:
+
+| Cleaning Step          | Removed   |
+| ---------------------- | --------- |
+| Exact duplicates       | 1,904,867 |
+| Too short (<10 chars)  | 3,628     |
+| Too long (>2000 chars) | 33        |
+| Non-code entries       | 139       |
+
+This was a big realisation.
+
+If I had trained on raw 3M data, the model would likely memorise duplicated patterns instead of learning diverse bug behaviour.
+
+Further filtering reduced:
+
+* 453,846 → 178,535 rows
+* Only 39% retained
+
+This confirmed duplication is a major issue in mined datasets.
+
+---
+
+#  CTSSB-1M (Cleaner Dataset)
+
+After reviewing the dataset paper more carefully, I identified CTSSB-1M as a cleaner subset of TSSB-3M.
+
+I converted all `.jsonl.gz` files into:
+
+```
+flask/data/raw/languages/python/ctssb_1m_raw.csv
+```
+
+* 966,985 bug fixes
+* 241 MB
+
+### Cleaning Results:
+
+| Metric             | Value   |
+| ------------------ | ------- |
+| Initial records    | 966,985 |
+| Final kept         | 861,655 |
+| Duplicates removed | 103,912 |
+| Too short removed  | 1,308   |
+| Too long removed   | 83      |
+
+Final dataset:
+
+```
+clean/languages/python/ctssb_1m_cleaned.csv
+```
+
+* 154 MB
+* 861,655 high-quality samples
+
+This is now my main training dataset.
+
+Much more realistic than my previous synthetic dataset.
+
+---
+
+#  Sampling Strategy Improvement
+
+Previously:
+
+* I used BOTH buggy and fixed per pair (2 samples).
+
+Now:
+
+* I randomly select only ONE per pair.
+
+```python
+use_buggy = random.random() < 0.5
+```
+
+Why this matters:
+
+* Reduces correlation.
+* Reduces leakage.
+* Improves generalisation.
+* Lowers overfitting risk.
+
+This was an important structural change in the training pipeline.
+
+---
+
+#  CodeBERT Training Results
+
+After improving the training and evaluation code (aligned more closely with the paper and official repo structure):
+
+Best validation results around Epoch 7:
+
+* Validation Accuracy ≈ 0.577
+* Average Precision (AP) ≈ 0.624
+* AUROC ≈ 0.617
+
+After epoch 7:
+
+* Training accuracy keeps increasing.
+* Validation performance slightly drops.
+
+This indicates mild overfitting, but expected at this stage.
+
+Important point:
+The model is no longer just memorising simple patterns.
+The task is clearly non-trivial.
+
+---
+
+#  Educational LLM – First Integration
+
+Started integrating the Educational LLM stage.
+
+Model:
+
+* Qwen2.5-Coder-7B-Instruct (4-bit quantised)
+
+Platform:
+
+* Kaggle GPU
+
+Pipeline:
+
+1. Load CodeBERT predictions.
+2. Pass code + diff to LLM.
+3. Generate structured 5-section explanation.
+4. Save results to CSV.
+
+Initial testing:
+
+* 20 samples → successful.
+* Then 100 samples → successful.
+
+---
+
+#  Hallucination Issue & Fix
+
+At first, the LLM produced:
+
+* Fake diff lines.
+* Broken formatting.
+* Incomplete sections.
+* Cut code blocks.
+
+After improving prompt grounding and adding a fallback system:
+
+On 100 samples:
+
+*  100% format compliance
+*  93% high-quality grounded explanations
+*  7% handled safely by fallback
+*  0 fake diffs
+
+The fallback mechanism ensures:
+
+* No corrupted outputs.
+* No hallucinated patch lines.
+* All diffs grounded in real data.
+
+This is a major improvement in robustness.
+
+---
+
+#  Testing Summary This Week
+
+This week I:
+
+* Tested CodeBERT manually more than 8 times.
+* Ran LLM explanation on 20 samples.
+* Scaled to 100 samples.
+* Compared first and improved prompt versions.
+* Verified no fake diffs.
+* Confirmed full structured output compliance.
+
+The second version of the prompt + fallback system shows major improvement in stability and reliability.
+
+---
+
+#  Key Lessons from Week 19
+
+1. Dataset quality is more important than dataset size.
+2. Deduplication is absolutely critical.
+3. Synthetic data caused misleading overfitting.
+4. CTSSB-1M provides more realistic bug diversity.
+5. Prompt engineering directly impacts hallucination rate.
+6. Ground-truth diff injection solves fake patch generation.
+7. The pipeline is now stable enough for scaling.
+
+---
+
+
+#  Week 19 Summary
+
+Week 19 was mainly about:
+
+* Fixing dataset quality.
+* Removing large-scale duplication.
+* Improving CodeBERT training.
+* Testing the model repeatedly.
+* Successfully integrating Qwen LLM.
+* Solving hallucination issues.
+* Achieving 70% structured explanation compliance.
+
+The system now feels significantly more stable and research-level compared to previous weeks.
+
+---
+
+
+
+
+
+
+
+
+---
+
+# Week 20 Report
+
+### Links : 
+Here are the direct links to the references provided in the previous response so you can easily add them to your report:
+
+1. Overfitting & Data Leakage
+
+    Paper: Shortcut Learning in Deep Neural Networks (Geirhos et al., 2020) — (Often cited alongside their work on underspecification and leakage).
+
+    Link: https://arxiv.org/abs/2004.07780
+
+    Alternative (Highly specific to ML Software Engineering): Leakage and the Reproducibility Crisis in ML-based Science (Kapoor & Narayanan, 2023).
+
+    Link: https://arxiv.org/abs/2207.07048
+
+2. Hidden Class Imbalance & Sampling
+
+    Paper: Software Vulnerability Detection Using Deep Neural Networks: A Survey (Lin et al., 2020).
+
+    Link: https://arxiv.org/abs/2009.07235
+
+3. CodeBERT vs. GraphCodeBERT
+
+    Paper: GraphCodeBERT: Pre-training Code Representations with Data Flow (Guo et al., 2021).
+
+    Link: https://arxiv.org/abs/2009.08366
+
+4. Dataset Quality: PyVul
+
+    Repository/Dataset: PyVul: A Large-scale Real-world Vulnerability Dataset (Quan et al.).
+
+    Link: https://github.com/billquan/PyVul
+## Overview
+
+This week was extremely important for the integrity of the project.
+
+The focus was not on pushing accuracy higher.
+The focus was on detecting problems, understanding them properly, and fixing them scientifically.
+
+Main focus areas:
+
+* Comparing CodeBERT vs GraphCodeBERT
+* Detecting and fixing overfitting
+* Fixing dataset leakage
+* Improving evaluation methodology
+* Testing CTSSB vs PyVul
+* Stabilizing the full training pipeline
+
+This week strengthened the scientific reliability of my FYP.
+
+---
+
+# 1. Overfitting Problem (Critical Discovery)
+
+After implementing the pair-input architecture and running multiple experiments on CTSSB, I noticed suspicious behaviour.
+
+### Observations
+
+* Training loss decreasing normally
+* Validation improving early
+* Later epochs unstable
+* Some validation scores unusually high
+* Test performance dropping compared to validation
+
+This pattern indicated overfitting.
+
+Instead of assuming, I analyzed the pipeline step by step to identify the exact causes.
+
+---
+
+# 2. Root Cause Analysis
+
+## Cause 1 — Data Leakage (Major Issue)
+
+Originally, I made a serious mistake.
+
+Both training and validation datasets were loaded from the same CSV file:
+
+```python
+train_dataset = CodePairDataset("combined_ctssb_augmented_cleaned.csv")
+val_dataset   = CodePairDataset("combined_ctssb_augmented_cleaned.csv")
+```
+
+This meant:
+
+* The model saw validation samples during training
+* Validation metrics were artificially inflated
+* Test performance later dropped
+* Evaluation was corrupted
+
+This was not normal overfitting.
+This was leakage.
+
+### Fix Applied
+
+I implemented proper dataset splitting:
+
+* 70% Train
+* 15% Validation
+* 15% Test
+
+The split is done before dataset loading and saved as separate CSV files.
+There is now zero overlap between splits.
+
+After applying this fix, metrics dropped — but they became honest.
+
+This was the most important correction this week.
+
+---
+
+## Cause 2 — Hidden Class Imbalance
+
+Before fixing negative sampling:
+
+* All samples had label 0
+* The model learned trivial classification
+* Metrics looked stable but were meaningless
+
+After implementing proper negative sampling:
+
+* 50% positive samples
+* 50% negative samples
+* The model was forced to learn semantic differences
+
+Once balanced, real overfitting behaviour became visible — which is actually good because it means the model is truly learning.
+
+---
+
+## Cause 3 — Learning Rate Too Aggressive
+
+Initial learning rate:
+
+```python
+1e-5
+```
+
+This caused:
+
+* Fast convergence
+* Sharp updates
+* Fitting noise
+* Unstable validation behaviour
+
+### Fix Applied
+
+I reduced the learning rate:
+
+```python
+5e-6
+```
+
+
+
+This resulted in:
+
+* Smoother convergence
+* More stable gradients
+* Reduced overfitting spikes
+* Improved generalization
+
+---
+
+## Cause 4 — Threshold Over-Optimization
+
+Previously, I optimized the classification threshold heavily on validation to maximize macro-F1.
+
+This can cause subtle overfitting to the validation distribution.
+
+### Fix Applied
+
+Now I:
+
+* Select threshold using validation
+* Freeze the threshold
+* Apply it directly to test
+
+There is no test-time tuning anymore.
+
+---
+
+# 3. Repeated CodeBERT Testing (Stability Verification)
+
+This week, I re-ran CodeBERT multiple times to verify stability and reproducibility.
+
+I trained and evaluated CodeBERT more than **6 separate times** under the corrected pipeline:
+
+* Proper train/val/test split
+* Balanced negative sampling
+* Lower learning rate
+* Frozen threshold
+
+Across runs, performance was consistent.
+
+The final stable **macro-F1 score was approximately 62% on the test set**.
+
+This confirms:
+
+* Leakage is fully resolved
+* Evaluation is stable
+* Results are reproducible
+* The 62% performance reflects real generalization
+
+Although 62% is lower than earlier inflated validation numbers, it represents an honest and scientifically valid result.
+
+This is far more valuable for the project.
+
+---
+
+# 4. Evidence Overfitting Was Reduced
+
+### PyVul Results (After Fixes)
+
+Validation:
+
+* Macro-F1: 0.644
+* AP: 0.691
+
+Test:
+
+* Macro-F1: 0.603
+* AP: 0.664
+
+Generalization gap:
+
+* AP drop ≈ 0.027
+* Macro-F1 drop ≈ 0.041
+
+This is a healthy gap.
+
+If overfitting still existed:
+
+* Validation would be much higher than test
+* Large performance collapse would occur
+
+This is not happening now.
+
+The system is stable.
+
+---
+
+# 5. CodeBERT vs GraphCodeBERT
+
+## CodeBERT (V2)
+
+* Buggy recall ≈ 0.98
+* Very low clean recall
+* Strong bias toward predicting buggy
+
+This is structural overfitting.
+
+The model learned dataset bias rather than true semantic bug detection.
+
+---
+
+## GraphCodeBERT (V3)
+
+* Clean recall ≈ 0.61
+* Buggy recall ≈ 0.55
+* Balanced behaviour
+* More stable threshold
+
+GraphCodeBERT overfits less aggressively because:
+
+* It models data-flow information
+* It captures structural relations
+* It has stronger semantic representations
+
+This confirms representation quality directly impacts overfitting behaviour.
+
+---
+
+# 6. Threshold Sweep Analysis
+
+I performed full threshold sweeps.
+
+At low threshold:
+
+* Buggy recall ≈ 1.0
+* Clean recall ≈ 0.0
+
+At high threshold:
+
+* Opposite behaviour
+
+Best threshold ≈ 0.52:
+
+* Clean recall ≈ 0.50
+* Buggy recall ≈ 0.53
+
+Additionally:
+
+* Many predictions cluster around 0.5
+* High uncertainty on difficult samples
+
+This indicates:
+
+* The model is not memorizing
+* It struggles on genuinely hard cases
+* Overfitting is reduced
+
+---
+
+# 7. Dataset Quality Insight
+
+Important observation:
+
+### CTSSB
+
+* ~821K pairs
+* Large dataset
+* Contains noise and trivial mutations
+
+### PyVul
+
+* 1,474 pairs
+* Smaller
+* Real vulnerability fixes
+* Higher semantic signal
+
+PyVul generalizes better.
+
+Conclusion:
+
+Overfitting is not only about model capacity.
+Dataset quality plays a major role.
+
+Cleaner data reduces memorization.
+
+---
+
+# 8. Current Stable Pipeline
+
+After all fixes, the pipeline now includes:
+
+* Proper 70/15/15 dataset split
+* No leakage
+* Balanced negative sampling
+* Pair-input architecture
+* Focal Loss
+* Reduced learning rate
+* Frozen threshold evaluation
+* Full threshold sweep diagnostics
+* Confusion matrix analysis
+* Near-threshold uncertainty analysis
+
+The system is now scientifically reliable.
+
+---
+
+# 9. Reflection
+
+This week changed my perspective.
+
+Getting 0.95 validation accuracy is easy.
+Getting 0.62 honest macro-F1 is difficult.
+
+But the honest result is what matters.
+
+Fixing leakage and overfitting improved the integrity of the project much more than chasing higher numbers.
+
+This week strengthened the foundation of my FYP significantly.
+
+---
+
+
