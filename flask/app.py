@@ -50,25 +50,29 @@ def review():
     static_result = run_static_analysis(code)
     static_issues = static_result.get("issues", [])
 
-    # 2. CodeBERT deep learning prediction
-    codebert_result = classifier.classify(code)
-    is_buggy = codebert_result.get("label", "clean").lower() == "buggy"
+    # 2. CodeBERT deep learning prediction (smart: chunks large files into functions)
+    codebert_result = classifier.classify_smart(code)
+    cb_label = codebert_result.get("label", "clean").lower()
+    is_buggy = cb_label == "buggy"
+    is_uncertain = cb_label == "uncertain"
     codebert_confidence = codebert_result.get("confidence", None)
 
-    # 3. Educational LLM explanation (only if bugs found)
+    # 3. Educational LLM explanation (only if bugs found or uncertain)
     llm_explanation = None
-    if is_buggy or static_issues:
+    if is_buggy or is_uncertain or static_issues:
         llm_explanation = generate_educational_explanation(
             code=code,
             language=language,
             static_issues=static_issues,
             codebert_label=codebert_result.get("label", "clean"),
+            flagged_functions=codebert_result.get("flagged_functions", [])
         )
 
     return jsonify({
         "prediction": {
             "label": codebert_result.get("label", "clean"),   # "buggy" | "clean"
             "confidence": codebert_confidence,
+            "method": codebert_result.get("method", "direct"),  # "direct" | "chunked"
         },
         "static_analysis": {
             "issues": static_issues,
@@ -76,6 +80,8 @@ def review():
         },
         "educational_explanation": llm_explanation,           # Markdown string from Qwen
         "language": language,
+        "flagged_functions": codebert_result.get("flagged_functions", []),
+        "total_functions": codebert_result.get("total_functions", 0),
     })
 
 
