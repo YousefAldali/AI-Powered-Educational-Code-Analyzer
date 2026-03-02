@@ -2287,3 +2287,294 @@ This week strengthened the foundation of my FYP significantly.
 ---
 
 
+
+---
+
+# Week 21 Report Dataset Fixes, Final Training, and New UI
+
+This week was honestly the week where everything finally started to make sense.
+I was stuck for like **2 weeks** trying to get my results to a level I can actually be confident about, and this week I finally got **clean + honest results** and fixed the big problems (dataset noise + deployment issues).
+
+---
+
+## 1) What my cleaned dataset looks like (Defectors + PyVul snippet dataset)
+
+This is the dataset I used for the clean “snippet-level” experiments:
+
+* **312,321 samples total**
+  * **104K buggy**
+  * **208K clean**
+* **0 exact duplicate snippets**
+* Every snippet is **≥ 100 characters** (so real function bodies, not useless tiny samples)
+* **2:1 clean:buggy ratio** (still fine for Macro-F1, not too imbalanced)
+
+
+---
+
+## 2) GraphCodeBERT vs CodeBERT (same dataset, fair comparison)
+
+I compared **GraphCodeBERT vs CodeBERT** using the **exact same dataset (Defectors + PyVul)** and same evaluation setup, so it’s a fair test.
+
+### Final Test Results
+
+| Metric            | CodeBERT  | GraphCodeBERT |
+| ----------------- | --------- | ------------- |
+| Accuracy          | **0.675** | 0.661         |
+| Macro-F1          | **0.649** | 0.636         |
+| AUC               | **0.725** | 0.711         |
+| Average Precision | 0.552     | 0.541         |
+| Clean Recall      | 0.712     | 0.701         |
+| Buggy Recall      | 0.601     | 0.587         |
+| Threshold (val)   | 0.484     | 0.479         |
+
+
+### My progress across versions (important because of leakage)
+
+| Version             | Dataset          |  Macro-F1 |       AUC | Honest?  |
+| ------------------- | ---------------- | --------: | --------: | -------- |
+| V1 (pair, CTSSB)    | 821K noisy pairs |     0.999 |      1.00 |  leaked |
+| V3 (snippet, CTSSB) | 821K noisy       |     0.582 |     0.625 |         |
+| PyVul only          | 1.4K curated     |     0.603 |     0.659 |         |
+| Defectors + PyVul   | 312K snippet     | **0.649** | **0.725** |         |
+
+So overall: I improved a lot, and this time it’s **real** (no leakage).
+
+---
+
+## 3) Full evaluation breakdown (Defectors + PyVul)
+
+**Final metrics:**
+
+* Macro-F1: **0.649**
+* AUC: **0.725**
+* AP: **0.552**
+* Accuracy: **67.5%**
+* Clean Precision: **78%**
+* Buggy Precision: **51%**
+* Clean Recall: **71%**
+* Buggy Recall: **60%**
+
+**Confusion Matrix:**
+
+* Actually Clean → **22,199 correct** | **8,975 false alarms**
+* Actually Buggy → **9,430 caught** | **6,241 missed**
+
+So the model catches **60% of real bugs**, but it still flags around **29% of clean code as buggy**.
+That’s why the LLM + static analysis layers are important.
+
+### Threshold sweep (the main insight)
+
+Macro-F1 peaks around **0.475–0.497**.
+
+Examples:
+
+* **0.408** → catches more bugs (82%) but half of clean code gets flagged
+* **0.484** → balanced (this is what I used )
+* **0.542** → fewer false alarms but misses too many bugs
+
+---
+
+## 4) The main dataset issue I discovered: Defectors label noise (SZZ problem)
+
+This was a big discovery for me.
+
+Defectors uses SZZ and marks “buggy lines” as **all lines changed in a bug-inducing commit**.
+So it includes lines like:
+
+* `from typing import List`
+* `from models.yolo import Model`
+
+These are not bugs… they’re just imports that got touched in the commit.
+
+### What this caused
+
+When I extracted functions, I labeled a function “buggy” if it contained any of those “buggy lines”.
+So some functions became buggy just because they contained an import statement that changed.
+
+This adds **a lot of label noise**, and I think that’s why performance gets capped around ~65%.
+
+So I stopped and decided the next step is to retrain on the **cleaner dataset version**.
+
+---
+
+## 5) Synthetic dataset generation (170K pairs) + why I added it
+
+I generated **170,000 synthetic Python bug-fix pairs** and merged them into my original CTSSB to improve diversity and fix weak areas. and it was 15% form all dataset.
+
+### What bug types I included (examples)
+
+* wrong operator (`+` vs `-`)
+* assignment in condition (`=` vs `==`)
+* missing colon
+* off-by-one loops
+* index out of range
+* missing None checks
+* mutable default args (`items=[]`)
+* shadowing built-ins (`list = []`)
+* missing return
+* wrong boolean operator (`or` vs `and`)
+* broad except → specific exception
+* divide by zero guard missing
+* unsafe dict access (`d[k]` vs `d.get(k)`)
+* indentation errors
+* `is` vs `==`
+* `list.append()` used like a return value
+* missing file close (`open()` vs `with open()`)
+
+### Why this helped
+
+This synthetic data gives the model clear repeated patterns of bugs that it can actually learn properly.
+This is what helped me break the “stuck” phase and finally get better stable results.
+
+---
+
+## 6) Final Python CodeBERT training (ultimate dataset run)
+
+This was the big final training run.
+
+### Final dataset composition (my “ultimate” python dataset)
+
+* CTSSB (general bugs): **814,416**
+* Defectors: **202,804**
+* Synthetic (bug types): **~183K** (after duplicates removed across generations)
+* CTSSB augmented: **6,622**
+* PyVul: **1,474**
+* Total: **1,208,301 unique pairs**
+* Removed **57,015 exact duplicates** using `drop_duplicates`
+
+Also, the synthetic part is not dominating:
+
+* Synthetic is only around **~15%** of the whole dataset, so it’s not overpowering the real data.
+
+### Final test results (frozen threshold from validation)
+
+* Threshold: **0.494**
+* Accuracy: **67.29%**
+* Macro-F1: **0.6727**
+* AUC: **0.7659**
+* AP: **0.7755**
+* Clean Recall: **69.78%**
+* Buggy Recall: **64.80%**
+
+So these results are now actually strong and stable, and I can finally move on.
+
+---
+
+## 7) Pre-trained CodeBERT baseline (before fine-tuning)
+
+I also tested the base CodeBERT without fine-tuning.
+It was basically random:
+
+* Macro-F1 ≈ **0.515**
+* AUC ≈ **0.514**
+* Accuracy ≈ **0.515**
+
+Then after fine-tuning, everything jumped up by **15–26%** depending on the metric.
+This proves the fine-tuning stage is doing real work, not just luck.
+
+---
+
+## 8) Deployment issue + my fix (long files problem)
+
+This was another big thing.
+
+### What was happening
+
+When I put a full Python file into the dashboard, CodeBERT would sometimes say “buggy” even if it’s correct.
+
+That’s because:
+
+* CodeBERT only reads the first part (token limit)
+* It mostly sees imports / boilerplate
+* It outputs probabilities around 0.50–0.57 (basically guessing)
+* Old pipeline forced buggy/clean → so false positives happened
+
+### What I changed
+
+* Split files using **AST** into real functions
+* Inject only **imports as context** (not massive globals)
+* Added **UNCERTAIN** state so borderline predictions don’t become fake “buggy”
+* Aggregated file results properly (file is buggy only if one function is confidently buggy)
+
+Now the system is much more realistic and professional.
+
+---
+
+## 9) New UI + full system connection (React + Flask + Tutor)
+
+This week I also got the new UI working end-to-end:
+
+* React frontend (Monaco editor + TutorPanel)
+* Flask JSON API (`/api/review`)
+* Tutor module that returns:
+  * placeholder output if no GPU (local dev)
+  * real Qwen explanations later on GPU
+
+So now the project works like a real product pipeline:
+**Static Analysis + CodeBERT detection + LLM explanation**.
+
+---
+
+## 10) What I’m doing next
+
+Now that Python is finally stable:
+
+* I will do the final “one last run” training on the best final dataset setup
+* Then I will start **Java**
+* After that I will move to **C#**
+* And I will keep the design language-agnostic so it’s easy to extend
+
+
+## 11) Pre-Trained vs Fine-Tuned CodeBERT (Critical Comparison)
+
+This is one of the most important validation experiments I ran this week.
+
+To prove that the improvement is real (and not just dataset bias or threshold tuning), I evaluated:
+
+Pre-trained CodeBERT (microsoft/codebert-base) with a randomly initialized classification head
+
+Fine-tuned CodeBERT trained on my ultimate cleaned dataset (1.2M pairs)
+
+Both models were evaluated using:
+
+The exact same dataset
+
+The same 70/15/15 split (by unique ID)
+
+The same evaluation protocol
+
+Threshold selected on validation only
+
+This makes the comparison scientifically valid.
+
+| Metric            | Pre-Trained | Fine-Tuned | Improvement |
+| ----------------- | ----------- | ---------- | ----------- |
+| Accuracy          | 51.51%      | **67.29%** | +15.78%     |
+| Macro-F1          | 51.50%      | **67.27%** | +15.77%     |
+| AUC               | 51.41%      | **76.59%** | +25.18%     |
+| Average Precision | 51.10%      | **77.55%** | +26.45%     |
+| Clean Recall      | 53.25%      | **69.78%** | +16.53%     |
+| Buggy Recall      | 49.77%      | **64.80%** | +15.03%     |
+| Clean F1          | 52.34%      | **68.08%** | +15.74%     |
+| Buggy F1          | 50.65%      | **66.46%** | +15.81%     |
+
+
+The pre-trained model performs almost randomly (~51%) across all metrics.
+This confirms that general code embeddings alone are not sufficient for defect detection.
+
+After fine-tuning:
+
+Macro-F1 improves by ~16%
+
+AUC improves by ~25%
+
+AP improves by ~26%
+
+The large AUC and AP gains are especially important   this shows the model did not just shift its threshold. It genuinely learned to separate buggy and clean code more effectively.
+
+This experiment strongly validates the necessity of task-specific fine-tuning.
+---
+
+ **End of Week 21:**
+This week I finally got past the stage where I was stuck.
+Now I have good results, a clean dataset direction, and a working full UI + API system, so I can actually move forward with the rest of the project.
