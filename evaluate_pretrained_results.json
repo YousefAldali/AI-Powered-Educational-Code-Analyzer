@@ -1,0 +1,28 @@
+{
+  "model": "microsoft/codebert-base",
+  "note": "Pre-trained CodeBERT, no fine-tuning",
+  "dataset": "/workspace/codebert_eval_gpu_bundle/ultimate_combined_dataset_pairs_v5.csv",
+  "split": "70/15/15 by unique ID (same as CodeBERT.py)",
+  "max_len": 384,
+  "threshold": 0.406,
+  "threshold_source": "validation only, NOT test",
+  "val_macro_f1_at_threshold": 0.5157869804494886,
+  "test_accuracy": 0.5151060335846591,
+  "test_macro_f1": 0.51495870945634,
+  "test_auc": 0.5140940257637221,
+  "test_ap": 0.5110023244225075,
+  "test_clean_recall": 0.5325340349266329,
+  "test_buggy_recall": 0.49767803224268536,
+  "test_clean_f1": 0.5234120097188476,
+  "test_buggy_f1": 0.5065054091938325,
+  "confusion_matrix": [
+    [
+      90477,
+      79422
+    ],
+    [
+      85344,
+      84555
+    ]
+  ]
+}
