@@ -53,6 +53,12 @@
     border-left: 3px solid var(--red);
 }
 
+.verdictUncertain {
+    background: rgba(245, 158, 11, 0.08);
+    /* Amber glow */
+    border-left: 3px solid var(--amber);
+}
+
 .verdictClean {
     background: var(--green-glow);
     border-left: 3px solid var(--green);
@@ -68,6 +74,10 @@
     color: var(--red);
 }
 
+.verdictUncertain .verdictIcon {
+    color: var(--amber);
+}
+
 .verdictClean .verdictIcon {
     color: var(--green);
 }
@@ -80,6 +90,10 @@
 
 .verdictBuggy .verdictTitle {
     color: var(--red);
+}
+
+.verdictUncertain .verdictTitle {
+    color: var(--amber);
 }
 
 .verdictClean .verdictTitle {
