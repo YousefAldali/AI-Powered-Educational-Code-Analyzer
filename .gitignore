@@ -52,4 +52,11 @@ dist/
 build/
 *.egg-info/
 *.zip
-*.json
+
+# Node/React
+node_modules/
+.env
+
+# Large model folders
+flask/models/CodeBERT/fine_tuned_model_old_pair_matching/
+trained_model_codebert_final/
