@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 from models.CodeBERT.classifier import CodeClassifier
-from baselines.baseline import run_static_analysis
+from models.codebert_baselines.baseline import run_static_analysis
 from models.llm.tutor import generate_educational_explanation
 
 app = Flask(__name__)
