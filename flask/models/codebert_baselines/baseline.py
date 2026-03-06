@@ -108,7 +108,7 @@ def run_keyword_baseline(code_content: str) -> Dict[str, Any]:
 
 # Get the absolute path relative to this file's location
 _BASELINES_DIR = os.path.dirname(os.path.abspath(__file__))
-_FLASK_ROOT = os.path.dirname(_BASELINES_DIR)
+_FLASK_ROOT = os.path.dirname(os.path.dirname(_BASELINES_DIR))
 BASELINE_C_MODEL_PATH = os.path.join(_FLASK_ROOT, "models", "baseline_c_tfidf_lr.pkl")
 _baseline_c_model = None
 
