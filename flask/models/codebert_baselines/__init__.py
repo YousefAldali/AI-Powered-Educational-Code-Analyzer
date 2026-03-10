@@ -1,5 +1,5 @@
 
-from baselines.baseline import (
+from models.codebert_baselines.baseline import (
     run_static_analysis,
     run_keyword_baseline,
     run_tfidf_baseline,
