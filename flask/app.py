@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 from models.CodeBERT.classifier import CodeClassifier
+from models.CodeBERT_Java.classifier import JavaCodeClassifier
 from models.codebert_baselines.baseline import run_static_analysis
 from models.llm.tutor import generate_educational_explanation
 
@@ -10,7 +11,14 @@ CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://12
 
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
 
-classifier = CodeClassifier()
+# Language-specific classifiers
+python_classifier = CodeClassifier()
+java_classifier = JavaCodeClassifier()
+
+CLASSIFIERS = {
+    "python": python_classifier,
+    "java": java_classifier,
+}
 
 
 @app.route("/api/review", methods=["POST"])
@@ -44,13 +52,18 @@ def review():
     if not code or not code.strip():
         return jsonify({"error": "No code provided."}), 400
 
-    # --- Run the analysis pipeline ---
+    # Pick the right classifier for the language
+    classifier = CLASSIFIERS.get(language)
+    if classifier is None:
+        return jsonify({"error": f"Unsupported language: {language}"}), 400
 
-    # 1. Static Analysis (Bandit for Python)
-    static_result = run_static_analysis(code)
+    #Run the analysis pipeline 
+
+    # 1. Static Analysis (Bandit for Python, not yet available for Java)
+    static_result = run_static_analysis(code, language=language)
     static_issues = static_result.get("issues", [])
 
-    # 2. CodeBERT deep learning prediction (smart: chunks large files into functions)
+    # 2. CodeBERT deep learning prediction (smart: chunks large files into functions/methods)
     codebert_result = classifier.classify_smart(code)
     cb_label = codebert_result.get("label", "clean").lower()
     is_buggy = cb_label == "buggy"
