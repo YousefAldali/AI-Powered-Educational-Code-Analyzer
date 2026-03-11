@@ -11,11 +11,9 @@ SHORT_CODE_THRESHOLD = 1500  # ~40 lines
 
 
 def _extract_functions(code: str):
-    """
-    Parse Python source into individual top-level functions and classes.
-    Returns a list of dicts: [{"name": "func_name", "code": "def ...", "lineno": 5}, ...]
-    Falls back to the full code if parsing fails.
-    """
+    # Parse Python source into individual top-level functions and classes.
+    # Returns a list of dicts
+    # Falls back to the full code if parsing fails.
     try:
         tree = ast.parse(code)
     except SyntaxError:
@@ -68,7 +66,7 @@ class CodeClassifier:
         self.model = CodeBERTModel()
 
     def classify(self, code: str):
-        """Classify a single code snippet (original behaviour)."""
+        # Classify a single code snippet 
         pred, prob_buggy, logits = self.model.predict(code)
         label = "buggy" if pred == 1 else "clean"
 
@@ -84,17 +82,6 @@ class CodeClassifier:
         }
 
     def classify_smart(self, code: str):
-        """
-        Intelligent classification that handles both short snippets and full files.
-
-        Short code  → classify directly (as before)
-        Large code  → split into functions, classify each, filter by confidence
-        
-        Returns the same format as classify() plus extra fields:
-          - "method": "direct" | "chunked"
-          - "flagged_functions": list of per-function results (only when chunked)
-          - "total_functions": how many functions were found
-        """
         # Short code: classify directly like before
         if len(code) < SHORT_CODE_THRESHOLD:
             result = self.classify(code)
