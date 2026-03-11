@@ -215,6 +215,32 @@ The fine-tuned CodeBERT model was evaluated on a held-out test set using a froze
 
 The pre-trained model performs near-randomly (~51%), confirming that general-purpose code embeddings alone are insufficient for defect detection. Fine-tuning on the expanded 1.24M-pair dataset yields substantial improvements across all metrics, with AUC reaching 80.29% and Macro-F1 reaching 69.82%.
 
+### CodeBERT Classification Performance (Java)
+
+The Java model was fine-tuned on a separate dataset of 160k bug-fix pairs and evaluated on a balanced test set of 48,208 samples (50% buggy, 50% clean).
+
+#### Java Evaluation Results
+
+| Metric            | Pre-Trained (Baseline) | Fine-Tuned  | Improvement |
+|-------------------|------------------------|-------------|-------------|
+| Accuracy          | 48.0%                  | **65.79%**  | +17.79%     |
+| Macro-F1          | 48.0%                  | **65.71%**  | +17.71%     |
+| AUC               | 47.4%                  | **73.52%**  | +26.12%     |
+| Average Precision | —                      | **71.03%**  | —           |
+| Clean Recall      | 48.0%                  | **61.03%**  | +13.03%     |
+| Buggy Recall      | 48.1%                  | **70.54%**  | +22.44%     |
+
+Despite having ~8x less training data than the Python model (160k vs 1.24M), the Java model achieves very similar performance (F1: 65.7% vs 69.8%), which suggests the training pipeline generalises well across languages.
+
+#### Cross-Language Comparison
+
+| Model    | Language | Dataset Size | Accuracy | Macro-F1 | AUC    |
+|----------|----------|--------------|----------|----------|--------|
+| CodeBERT | Python   | 1,242,654    | 69.94%   | 69.82%   | 80.29% |
+| CodeBERT | Java     | ~160,000     | 65.79%   | 65.71%   | 73.52% |
+
+---
+
 ### LLM Explainer Quality (100-Sample Evaluation)
 
 | Metric                       | Result  |
