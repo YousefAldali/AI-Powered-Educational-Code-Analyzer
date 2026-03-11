@@ -1,0 +1,29 @@
+{
+  "model": "microsoft/codebert-base",
+  "note": "Pre-trained CodeBERT on Java, no fine-tuning (baseline)",
+  "dataset": "java_ultimate_combined.csv",
+  "language": "java",
+  "split": "70/15/15 by unique ID (same as train_java.py)",
+  "max_len": 384,
+  "threshold": 0.385,
+  "threshold_source": "validation only, NOT test",
+  "val_macro_f1_at_threshold": 0.48025094852960176,
+  "test_accuracy": 0.48041818785263857,
+  "test_macro_f1": 0.48041811541558405,
+  "test_auc": 0.4742953225204334,
+  "test_ap": 0.48068994334897314,
+  "test_clean_recall": 0.4800448058413541,
+  "test_buggy_recall": 0.480791569863923,
+  "test_clean_f1": 0.480224112886491,
+  "test_buggy_f1": 0.4806121179446771,
+  "confusion_matrix": [
+    [
+      11571,
+      12533
+    ],
+    [
+      12515,
+      11589
+    ]
+  ]
+}

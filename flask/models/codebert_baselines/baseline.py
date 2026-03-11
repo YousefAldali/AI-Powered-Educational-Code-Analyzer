@@ -8,8 +8,15 @@ import joblib
 
 
 # Baseline A: static analyzers (flake8 + bandit)
-def run_static_analysis(code_content: str) -> Dict[str, Any]:
+def run_static_analysis(code_content: str, language: str = "python") -> Dict[str, Any]:
     
+    # Java static analysis not enabled yet — Bandit is Python-only
+    if language != "python":
+        return {
+            "issues": [],
+            "summary": f"Static analysis not yet available for {language}."
+        }
+
     issues = []
     temp_path = None
 

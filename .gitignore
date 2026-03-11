@@ -60,3 +60,6 @@ node_modules/
 # Large model folders
 flask/models/CodeBERT/fine_tuned_model_old_pair_matching/
 trained_model_codebert_final/
+flask/models/CodeBERT_Java/fine_tuned_model/
+flask/models/CodeBERT_Python/fine_tuned_model/
+training_modules/java/java_training/trained_model_codebert_java/
