@@ -192,27 +192,28 @@ The fine-tuned CodeBERT model was evaluated on a held-out test set using a froze
 
 #### Training Dataset Composition
 
-| Source             | Samples   |
-|--------------------|-----------|
-| CTSSB              | 814,416   |
-| Defectors          | 202,804   |
-| Synthetic          | ~183,000  |
-| CTSSB Augmented    | 6,622     |
-| PyVul              | 1,474     |
-| **Total (deduplicated)** | **1,208,301** |
+| Source                       | Samples   |
+|------------------------------|-----------|
+| CTSSB                        | 738,769   |
+| Defectors                    | 202,804   |
+| Synthetic                    | ~183,000  |
+| CTSSB Augmented              | 6,622     |
+| PyVul                        | 1,474     |
+| **Total (deduplicated)**     | **1,242,654** |
+
 
 #### Python Evaluation Results
 
 | Metric            | Pre-Trained (Baseline) | Fine-Tuned   | Improvement |
 |-------------------|------------------------|--------------|-------------|
-| Accuracy          | 51.51%                 | **67.29%**   | +15.78%     |
-| Macro-F1          | 51.50%                 | **67.27%**   | +15.77%     |
-| AUC               | 51.41%                 | **76.59%**   | +25.18%     |
-| Average Precision | 51.10%                 | **77.55%**   | +26.45%     |
-| Clean Recall      | 53.25%                 | **69.78%**   | +16.53%     |
-| Buggy Recall      | 49.77%                 | **64.80%**   | +15.03%     |
+| Accuracy          | 51.51%                 | **69.94%**   | +18.43%     |
+| Macro-F1          | 51.50%                 | **69.82%**   | +18.32%     |
+| AUC               | 51.41%                 | **80.29%**   | +28.88%     |
+| Average Precision | 51.10%                 | **81.29%**   | +30.19%     |
+| Clean Recall      | 53.25%                 | **76.14%**   | +22.89%     |
+| Buggy Recall      | 49.77%                 | **63.73%**   | +13.96%     |
 
-The pre-trained model performs near-randomly (~51%), confirming that general-purpose code embeddings alone are insufficient for defect detection. Fine-tuning on the curated 1.2M-pair dataset yields substantial improvements across all metrics, validating the necessity of task-specific training.
+The pre-trained model performs near-randomly (~51%), confirming that general-purpose code embeddings alone are insufficient for defect detection. Fine-tuning on the expanded 1.24M-pair dataset yields substantial improvements across all metrics, with AUC reaching 80.29% and Macro-F1 reaching 69.82%.
 
 ### LLM Explainer Quality (100-Sample Evaluation)
 
