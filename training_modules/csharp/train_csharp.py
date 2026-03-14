@@ -1,383 +1,437 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.optim import AdamW
+from torch.utils.data import Dataset, DataLoader
+from transformers import AutoTokenizer, AutoModel, get_cosine_schedule_with_warmup
+from sklearn.metrics import f1_score, recall_score, roc_auc_score, average_precision_score
+import pandas as pd
+import json
 import os
 import random
-import difflib
-import numpy as np
-import pandas as pd
-import torch
-from torch.utils.data import Dataset, DataLoader
-from transformers import (
-    RobertaTokenizer,
-    RobertaForSequenceClassification,
-    get_linear_schedule_with_warmup
-)
-from torch.optim import AdamW
 from tqdm import tqdm
-from sklearn.metrics import accuracy_score, average_precision_score, roc_auc_score
+import numpy as np
 
-# AMP support for mixed precision training on CUDA GPUs
-try:
-    from torch.amp import autocast
+
+# GPU configuration
+torch.set_float32_matmul_precision("high")
+if torch.cuda.is_available():
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    torch.backends.cudnn.benchmark = True
     try:
-        from torch.amp import GradScaler
-    except ImportError:
-        from torch.cuda.amp import GradScaler
-except ImportError:
-    from torch.cuda.amp import autocast, GradScaler
+        torch.backends.cuda.enable_flash_sdp(True)
+        torch.backends.cuda.enable_mem_efficient_sdp(True)
+    except Exception:
+        pass
 
 
-# Configuration parameters
-BATCH_SIZE = 32                 # Number of samples per gradient update
-EPOCHS = 10                     # Total number of training passes over the dataset
-LEARNING_RATE = 2e-5            # Standard fine-tuning learning rate for transformers
-MAX_LEN = 256                   # Maximum token length per code snippet
-WINDOW_SIZE = 5                 # Lines of context around the changed code
-MODEL_NAME = "microsoft/codebert-base"
-OUTPUT_DIR = "trained_model_csharp"
-SEED = 42                       # Ensures reproducibility
+# Configurations — same architecture as Python & Java, just different dataset + output
+MODEL_NAME              = "microsoft/codebert-base"         # Pre-trained model to use
+BATCH_SIZE              = 128                               # Number of samples per batch
+GRAD_ACCUMULATION_STEPS = 1                                 # Number of steps to accumulate gradients before updating weights
+MAX_LEN                 = 384                               # Maximum token length per code snippet
+EPOCHS                  = 20                                # Number of epochs to train for
+LEARNING_RATE           = 5e-6                              # Learning rate for the optimizer
+EARLY_STOPPING_PATIENCE = 4                                 # Number of epochs to wait before stopping training
+WARMUP_RATIO            = 0.06                              # Ratio of total training steps used for warm-up
+DEVICE                  = "cuda" if torch.cuda.is_available() else "cpu"
+OUTPUT_DIR              = "trained_model_codebert_csharp"
+SEED                    = 42                                # Ensures reproducibility
 
 # Flexible dataset path resolution
-DATA_PATH = "data/csharp_combined_dataset.csv"
-if not os.path.exists(DATA_PATH):
-    DATA_PATH = "../../flask/data/raw/csharp/csharp_combined_dataset.csv"
-if not os.path.exists(DATA_PATH):
-    DATA_PATH = "flask/data/raw/csharp/csharp_combined_dataset.csv"
+CSV_FILE = "data/csharp_ultimate_combined.csv"
+if not os.path.exists(CSV_FILE):
+    CSV_FILE = "../../flask/data/clean/csharp/csharp_ultimate_combined.csv"
+if not os.path.exists(CSV_FILE):
+    CSV_FILE = "flask/data/clean/csharp/csharp_ultimate_combined.csv"
 
 
-# Device selection
-def get_device():
-    # Prefer CUDA if available
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    # Apple Silicon fallback
-    if torch.backends.mps.is_available():
-        return torch.device("mps")
-    # Otherwise CPU
-    return torch.device("cpu")
+# Focal Loss
+class FocalLoss(nn.Module):
+    def __init__(self, gamma=2.0, alpha=1.0):
+        super().__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+
+    def forward(self, logits, labels):
+        ce_loss = F.cross_entropy(logits, labels, reduction='none')
+        p_t = torch.exp(-ce_loss)
+        focal_loss = self.alpha * ((1 - p_t) ** self.gamma) * ce_loss
+        return focal_loss.mean()
 
 
-# Reproducibility
-def set_seed(seed=42):
-    # Fix all random generators for consistent experiments
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-
-
-# Extract a window of context around the changed lines
-def extract_diff_window(buggy_code, fixed_code, window_size=5):
-    buggy_lines = str(buggy_code).split("\n")
-    fixed_lines = str(fixed_code).split("\n")
-
-    matcher = difflib.SequenceMatcher(None, buggy_lines, fixed_lines)
-
-    buggy_changed = set()
-    fixed_changed = set()
-
-    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-        if tag != "equal":
-            for i in range(i1, i2):
-                buggy_changed.add(i)
-            for j in range(j1, j2):
-                fixed_changed.add(j)
-
-    if not buggy_changed:
-        buggy_changed.add(len(buggy_lines) // 2)
-    if not fixed_changed:
-        fixed_changed.add(len(fixed_lines) // 2)
-
-    b_min = max(0, min(buggy_changed) - window_size)
-    b_max = min(len(buggy_lines), max(buggy_changed) + window_size + 1)
-
-    f_min = max(0, min(fixed_changed) - window_size)
-    f_max = min(len(fixed_lines), max(fixed_changed) + window_size + 1)
-
-    return "\n".join(buggy_lines[b_min:b_max]), "\n".join(fixed_lines[f_min:f_max])
-
-
-# Load and validate dataset
-def load_pairs_csv(path):
-    print(f"Loading dataset from: {path}")
-    df = pd.read_csv(path)
-
-    # Ensure required columns exist
-    if "buggy_code" not in df.columns or "fixed_code" not in df.columns:
-        raise ValueError("CSV must contain 'buggy_code' and 'fixed_code' columns")
-
-    # Generate IDs if missing
-    if "id" not in df.columns:
-        print("ID column missing. Generating sequential IDs.")
-        df["id"] = range(len(df))
-
-    # Remove rows with missing values
-    df = df.dropna(subset=["buggy_code", "fixed_code"]).copy()
-
-    # Ensure ID is numeric
-    try:
-        df["id"] = df["id"].astype(int)
-    except:
-        # If ID is non-numeric, convert to hashed integer
-        df["id"] = df["id"].apply(lambda x: hash(str(x)) % 10000000)
-
-    return df
-
-
-# Leakage-safe 80/10/10 split
-def split_ids(df, seed=42):
-    # Extract unique pair IDs
-    unique_ids = df["id"].unique().tolist()
-
-    # Shuffle IDs for randomness
-    rng = np.random.default_rng(seed)
-    rng.shuffle(unique_ids)
-
-    # Compute split boundaries
-    n = len(unique_ids)
-    train_end = int(0.8 * n)
-    val_end = int(0.9 * n)
-
-    # Split IDs
-    train_ids = set(unique_ids[:train_end])
-    val_ids = set(unique_ids[train_end:val_end])
-    test_ids = set(unique_ids[val_end:])
-
-    # Filter original dataframe by ID sets
-    train_df = df[df["id"].isin(train_ids)].reset_index(drop=True)
-    val_df = df[df["id"].isin(val_ids)].reset_index(drop=True)
-    test_df = df[df["id"].isin(test_ids)].reset_index(drop=True)
-
-    return train_df, val_df, test_df
-
-
-# Convert pairs into classification samples
-def pairs_to_samples(df, window_size=5):
-    # Convert each pair into two samples:
-    # buggy window -> label 1
-    # fixed window -> label 0
-    samples = []
-
-    for _, row in df.iterrows():
-        row_id = int(row["id"])
-        buggy_window, fixed_window = extract_diff_window(
-            row["buggy_code"], row["fixed_code"], window_size
-        )
-
-        if len(buggy_window.strip()) > 5:
-            samples.append({"text": buggy_window, "label": 1, "id": row_id})
-        if len(fixed_window.strip()) > 5:
-            samples.append({"text": fixed_window, "label": 0, "id": row_id})
-
-    df_out = pd.DataFrame(samples)
-
-    # Shuffle samples for better stochastic training
-    if not df_out.empty:
-        df_out = df_out.sample(frac=1, random_state=SEED).reset_index(drop=True)
-
-    return df_out
-
-
-# Custom PyTorch Dataset
-class CodeDataset(Dataset):
-    # Wraps text, label, and id into tokenized tensors
-    def __init__(self, texts, labels, ids, tokenizer, max_len):
-        self.texts = texts
-        self.labels = labels
-        self.ids = ids
+# Dataset: supports both formats
+#   Format A (single-snippet): columns [code, label]
+#   Format B (pairs): columns [buggy_code, fixed_code]
+class CodeSnippetDataset(Dataset):
+    def __init__(self, csv_path, tokenizer, max_len=384):
         self.tokenizer = tokenizer
         self.max_len = max_len
+        self.samples = []
+
+        df = pd.read_csv(csv_path)
+
+        if 'code' in df.columns and 'label' in df.columns:
+            # Format A: pre-processed single-snippet
+            for _, row in df.iterrows():
+                code = str(row['code']).strip()
+                label = int(row['label'])
+                if len(code) >= 50:
+                    self.samples.append({'code': code, 'label': label})
+        elif 'buggy_code' in df.columns and 'fixed_code' in df.columns:
+            # Format B: pairs -> split into 2 samples each
+            for _, row in df.iterrows():
+                buggy = str(row['buggy_code']).strip()
+                fixed = str(row['fixed_code']).strip()
+                self.samples.append({'code': buggy, 'label': 1})
+                self.samples.append({'code': fixed, 'label': 0})
+        else:
+            raise ValueError(f"Unknown CSV format. Columns: {list(df.columns)}")
+
+        random.shuffle(self.samples)
+
+        n_buggy = sum(1 for s in self.samples if s['label'] == 1)
+        n_clean = len(self.samples) - n_buggy
+        print(f"  Loaded {len(self.samples):,} samples ({n_buggy:,} buggy + {n_clean:,} clean)")
 
     def __len__(self):
-        return len(self.texts)
+        return len(self.samples)
 
     def __getitem__(self, idx):
-        # Tokenize input text
-        enc = self.tokenizer(
-            str(self.texts[idx]),
-            add_special_tokens=True,
+        item = self.samples[idx]
+        encoding = self.tokenizer(
+            item['code'],
             max_length=self.max_len,
-            padding="max_length",
+            padding='max_length',
             truncation=True,
-            return_tensors="pt"
+            return_tensors='pt'
         )
-
         return {
-            "input_ids": enc["input_ids"].squeeze(0),
-            "attention_mask": enc["attention_mask"].squeeze(0),
-            "labels": torch.tensor(int(self.labels[idx]), dtype=torch.long),
-            "id": torch.tensor(int(self.ids[idx]), dtype=torch.long),
+            'input_ids': encoding['input_ids'].squeeze(),
+            'attention_mask': encoding['attention_mask'].squeeze(),
+            'labels': torch.tensor(item['label'], dtype=torch.long),
         }
 
 
+# Model — same custom head as Python & Java: encoder -> CLS pooling -> dropout -> linear
+class BugDetectionModel(nn.Module):
+    def __init__(self, model_name, num_classes=2, dropout_prob=0.2):
+        super().__init__()
+        self.encoder = AutoModel.from_pretrained(model_name)
+        self.dropout = nn.Dropout(dropout_prob)
+        self.classifier = nn.Linear(self.encoder.config.hidden_size, num_classes)
+
+    def forward(self, input_ids, attention_mask):
+        outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
+        pooled = outputs.last_hidden_state[:, 0, :]
+        pooled = self.dropout(pooled)
+        return self.classifier(pooled)
+
+
+# torch.compile-safe helpers
+def get_state_dict(model):
+    return model._orig_mod.state_dict() if hasattr(model, '_orig_mod') else model.state_dict()
+
+def load_state_dict_safe(model, state_dict):
+    target = model._orig_mod if hasattr(model, '_orig_mod') else model
+    target.load_state_dict(state_dict)
+
+
 # Training loop
-def train_epoch(model, loader, optimizer, scheduler, device, scaler):
+def train_epoch(model, dataloader, optimizer, scheduler, device, criterion, grad_accum_steps=1):
     model.train()
-    loss_fn = torch.nn.CrossEntropyLoss()
-
     total_loss = 0
-    correct = 0
-    total = 0
+    pbar = tqdm(dataloader, desc="Training")
+    optimizer.zero_grad(set_to_none=True)
 
-    for batch in tqdm(loader, desc="Training", leave=False):
-        input_ids = batch["input_ids"].to(device)
-        mask = batch["attention_mask"].to(device)
-        labels = batch["labels"].to(device)
+    for step, batch in enumerate(pbar):
+        input_ids = batch['input_ids'].to(device, non_blocking=True)
+        attention_mask = batch['attention_mask'].to(device, non_blocking=True)
+        labels = batch['labels'].to(device, non_blocking=True)
 
-        optimizer.zero_grad(set_to_none=True)
+        with torch.amp.autocast(device_type=device, dtype=torch.bfloat16, enabled=(device == "cuda")):
+            logits = model(input_ids, attention_mask)
+            loss = criterion(logits, labels) / grad_accum_steps
 
-        # Mixed precision if CUDA
-        if device.type == "cuda":
-            with autocast("cuda"):
-                outputs = model(input_ids=input_ids, attention_mask=mask)
-                loss = loss_fn(outputs.logits, labels)
+        loss.backward()
 
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-        else:
-            outputs = model(input_ids=input_ids, attention_mask=mask)
-            loss = loss_fn(outputs.logits, labels)
-            loss.backward()
+        if (step + 1) % grad_accum_steps == 0 or (step + 1) == len(dataloader):
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
+            scheduler.step()
+            optimizer.zero_grad(set_to_none=True)
 
-        scheduler.step()
+        total_loss += loss.item() * grad_accum_steps
+        pbar.set_postfix({'loss': f"{loss.item() * grad_accum_steps:.4f}"})
+
+    return total_loss / len(dataloader)
+
+
+# Evaluation with macro-F1 threshold sweep
+@torch.no_grad()
+def evaluate(model, dataloader, device, criterion):
+    model.eval()
+    total_loss = 0
+    all_logits, all_labels = [], []
+
+    for batch in tqdm(dataloader, desc="Evaluating", leave=False):
+        input_ids = batch['input_ids'].to(device, non_blocking=True)
+        attention_mask = batch['attention_mask'].to(device, non_blocking=True)
+        labels = batch['labels'].to(device, non_blocking=True)
+
+        with torch.amp.autocast(device_type=device, dtype=torch.bfloat16, enabled=(device == "cuda")):
+            logits = model(input_ids, attention_mask)
+            loss = criterion(logits, labels)
 
         total_loss += loss.item()
-        preds = torch.argmax(outputs.logits, dim=1)
-        correct += (preds == labels).sum().item()
-        total += labels.size(0)
+        all_logits.append(logits.cpu())
+        all_labels.append(labels.cpu())
 
-    return total_loss / len(loader), correct / total
+    logits = torch.cat(all_logits, dim=0)
+    labels = torch.cat(all_labels, dim=0)
+    probs = F.softmax(logits, dim=1)[:, 1].float().numpy()
+    labels = labels.numpy()
 
+    metrics = {'loss': total_loss / len(dataloader)}
 
-# Validation with AP + AUROC
-def evaluate(model, loader, device):
-    model.eval()
-
-    all_labels = []
-    all_probs = []
-    all_preds = []
-
-    with torch.no_grad():
-        for batch in loader:
-            input_ids = batch["input_ids"].to(device)
-            mask = batch["attention_mask"].to(device)
-            labels = batch["labels"].to(device)
-
-            outputs = model(input_ids=input_ids, attention_mask=mask)
-            probs = torch.softmax(outputs.logits, dim=1)[:, 1]
-            preds = torch.argmax(outputs.logits, dim=1)
-
-            all_labels.extend(labels.cpu().numpy())
-            all_probs.extend(probs.cpu().numpy())
-            all_preds.extend(preds.cpu().numpy())
-
-    acc = accuracy_score(all_labels, all_preds)
-
-    if len(set(all_labels)) == 2:
-        ap = average_precision_score(all_labels, all_probs)
-        auroc = roc_auc_score(all_labels, all_probs)
+    if len(np.unique(labels)) > 1:
+        metrics['auc'] = roc_auc_score(labels, probs)
+        metrics['ap'] = average_precision_score(labels, probs)
     else:
-        ap = None
-        auroc = None
+        metrics['auc'] = 0.5
+        metrics['ap'] = 0.5
 
-    return acc, ap, auroc
+    # Threshold sweep for MACRO-F1
+    best_f1, best_threshold = 0, 0.5
+    sweep_lo = max(0.05, float(probs.min()))
+    sweep_hi = min(0.95, float(probs.max()))
+    for threshold in np.linspace(sweep_lo, sweep_hi, 80):
+        preds = (probs >= threshold).astype(int)
+        macro_f1 = f1_score(labels, preds, average='macro', zero_division=0)
+        if macro_f1 > best_f1:
+            best_f1 = macro_f1
+            best_threshold = round(float(threshold), 3)
+
+    best_preds = (probs >= best_threshold).astype(int)
+    metrics['macro_f1'] = best_f1
+    metrics['best_threshold'] = best_threshold
+    metrics['clean_recall'] = recall_score(labels, best_preds, pos_label=0, zero_division=0)
+    metrics['buggy_recall'] = recall_score(labels, best_preds, pos_label=1, zero_division=0)
+    metrics['clean_f1'] = f1_score(labels, best_preds, pos_label=0, zero_division=0)
+    metrics['buggy_f1'] = f1_score(labels, best_preds, pos_label=1, zero_division=0)
+    metrics['accuracy'] = (best_preds == labels).mean()
+
+    return metrics
 
 
-# Main training procedure
 def main():
-    set_seed(SEED)
-    device = get_device()
-    print("Using device:", device)
-
-    if not os.path.exists(DATA_PATH):
-        print("Dataset not found.")
-        return
-
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
+    random.seed(SEED)
+
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    model = BugDetectionModel(MODEL_NAME).to(DEVICE)
+
+    if hasattr(torch, 'compile'):
+        try:
+            model = torch.compile(model)
+            print("torch.compile enabled")
+        except Exception:
+            pass
+
+    criterion = FocalLoss(gamma=2.0, alpha=1.0)
+    optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.01)
+
+    # Load data and split by unique id
+    print(f"Loading {CSV_FILE}...")
+    df = pd.read_csv(CSV_FILE)
+    print(f"  Total rows: {len(df):,}")
+
+    unique_ids = df['id'].unique()
+    np.random.seed(SEED)
+    np.random.shuffle(unique_ids)
+
+    train_cut = int(0.70 * len(unique_ids))
+    val_cut = int(0.85 * len(unique_ids))
+
+    train_ids = set(unique_ids[:train_cut])
+    val_ids = set(unique_ids[train_cut:val_cut])
+    test_ids = set(unique_ids[val_cut:])
+
+    train_df = df[df['id'].isin(train_ids)]
+    val_df = df[df['id'].isin(val_ids)]
+    test_df = df[df['id'].isin(test_ids)]
+
+    # Save splits
     os.makedirs("data", exist_ok=True)
+    train_path = "data/csharp_temp_train.csv"
+    val_path = "data/csharp_temp_val.csv"
+    test_path = "data/csharp_temp_test.csv"
+    train_df.to_csv(train_path, index=False)
+    val_df.to_csv(val_path, index=False)
+    test_df.to_csv(test_path, index=False)
 
-    # Load full dataset
-    df_pairs = load_pairs_csv(DATA_PATH)
-    print("Total pairs:", len(df_pairs))
+    print(f"\n{'='*60}")
+    print(f"Data split (by unique ID):")
+    print(f"  Train: {len(train_df):,}")
+    print(f"  Val:   {len(val_df):,}")
+    print(f"  Test:  {len(test_df):,}")
+    print(f"{'='*60}\n")
 
-    # Split dataset without leakage
-    train_pairs, val_pairs, test_pairs = split_ids(df_pairs, seed=SEED)
+    train_dataset = CodeSnippetDataset(train_path, tokenizer, MAX_LEN)
+    val_dataset = CodeSnippetDataset(val_path, tokenizer, MAX_LEN)
 
-    # Convert pairs to classification samples
-    train_df = pairs_to_samples(train_pairs, window_size=WINDOW_SIZE)
-    val_df = pairs_to_samples(val_pairs, window_size=WINDOW_SIZE)
-    test_df = pairs_to_samples(test_pairs, window_size=WINDOW_SIZE)
-
-    print("Train samples:", len(train_df))
-    print("Validation samples:", len(val_df))
-    print("Test samples:", len(test_df))
-
-    # Save locked test set for final evaluation
-    test_df.to_csv("data/csharp_test_set.csv", index=False)
-
-    # Load tokenizer and model
-    tokenizer = RobertaTokenizer.from_pretrained(MODEL_NAME)
-    model = RobertaForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=2)
-    model.to(device)
-
-    # Create DataLoaders
-    train_loader = DataLoader(
-        CodeDataset(train_df["text"], train_df["label"], train_df["id"], tokenizer, MAX_LEN),
-        batch_size=BATCH_SIZE,
-        shuffle=True,
-        num_workers=4 if device.type == "cuda" else 0,
-        pin_memory=(device.type == "cuda")
-    )
-
-    val_loader = DataLoader(
-        CodeDataset(val_df["text"], val_df["label"], val_df["id"], tokenizer, MAX_LEN),
-        batch_size=BATCH_SIZE,
-        shuffle=False,
-        num_workers=4 if device.type == "cuda" else 0,
-        pin_memory=(device.type == "cuda")
-    )
-
-    optimizer = AdamW(model.parameters(), lr=LEARNING_RATE)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
+                              num_workers=8, pin_memory=True, prefetch_factor=4,
+                              persistent_workers=True, drop_last=True)
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False,
+                            num_workers=4, pin_memory=True, prefetch_factor=2,
+                            persistent_workers=True)
 
     total_steps = len(train_loader) * EPOCHS
-    scheduler = get_linear_schedule_with_warmup(
-        optimizer,
-        num_warmup_steps=int(0.1 * total_steps),
-        num_training_steps=total_steps
-    )
+    warmup_steps = int(total_steps * WARMUP_RATIO)
+    scheduler = get_cosine_schedule_with_warmup(optimizer, warmup_steps, total_steps)
 
-    scaler = GradScaler() if device.type == "cuda" else None
+    # Training
+    best_val_f1 = 0
+    patience_counter = 0
+    training_history = []
 
-    best_ap = -1
-
-    # Training loop
     for epoch in range(EPOCHS):
-        print(f"\nEpoch {epoch+1}/{EPOCHS}")
+        print(f"\n{'='*60}")
+        print(f"Epoch {epoch + 1}/{EPOCHS}")
+        print(f"{'='*60}")
 
-        train_loss, train_acc = train_epoch(model, train_loader, optimizer, scheduler, device, scaler)
-        print("Train Loss:", round(train_loss, 4), "| Train Acc:", round(train_acc, 4))
+        train_loss = train_epoch(model, train_loader, optimizer, scheduler, DEVICE, criterion, GRAD_ACCUMULATION_STEPS)
+        val_metrics = evaluate(model, val_loader, DEVICE, criterion)
 
-        val_acc, val_ap, val_auroc = evaluate(model, val_loader, device)
+        print(f"Train Loss:   {train_loss:.4f}")
+        print(f"Val Loss:     {val_metrics['loss']:.4f}")
+        print(f"Val AUC:      {val_metrics['auc']:.4f}")
+        print(f"Val AP:       {val_metrics['ap']:.4f}")
+        print(f"Val Macro-F1: {val_metrics['macro_f1']:.4f} @ t={val_metrics['best_threshold']}")
+        print(f"Val Clean R:  {val_metrics['clean_recall']:.4f}  Buggy R: {val_metrics['buggy_recall']:.4f}")
 
-        if val_ap is not None:
-            print("Val Acc:", round(val_acc, 4),
-                  "| AP:", round(val_ap, 4),
-                  "| AUROC:", round(val_auroc, 4))
+        training_history.append({
+            'epoch': epoch + 1,
+            'train_loss': train_loss,
+            'val_loss': val_metrics['loss'],
+            'val_auc': val_metrics['auc'],
+            'val_ap': val_metrics['ap'],
+            'val_macro_f1': val_metrics['macro_f1'],
+            'val_clean_recall': val_metrics['clean_recall'],
+            'val_buggy_recall': val_metrics['buggy_recall'],
+            'best_threshold': val_metrics['best_threshold'],
+        })
+
+        current_f1 = val_metrics['macro_f1']
+        if current_f1 > best_val_f1:
+            best_val_f1 = current_f1
+            patience_counter = 0
+            torch.save(get_state_dict(model), f"{OUTPUT_DIR}/pytorch_model.bin")
+            tokenizer.save_pretrained(OUTPUT_DIR)
+            print(f"Best model + tokenizer saved (macro-F1: {current_f1:.4f})")
         else:
-            print("Val Acc:", round(val_acc, 4))
+            patience_counter += 1
+            print(f"No improvement ({patience_counter}/{EARLY_STOPPING_PATIENCE})")
+            if patience_counter >= EARLY_STOPPING_PATIENCE:
+                print(f"Early stopping at epoch {epoch + 1}")
+                break
 
-        # Save best model based on AP
-        if val_ap is not None and val_ap > best_ap:
-            best_ap = val_ap
-            model.save_pretrained(os.path.join(OUTPUT_DIR, "best_ap"))
-            tokenizer.save_pretrained(os.path.join(OUTPUT_DIR, "best_ap"))
-            print("Saved BEST_AP model")
+    with open(f"{OUTPUT_DIR}/training_history.json", 'w') as f:
+        json.dump(training_history, f, indent=2)
 
-    # Always save final model
-    model.save_pretrained(os.path.join(OUTPUT_DIR, "checkpoint-last"))
-    tokenizer.save_pretrained(os.path.join(OUTPUT_DIR, "checkpoint-last"))
-    print("Saved final checkpoint")
+    print(f"\nTraining complete! Best Val Macro-F1: {best_val_f1:.4f}")
+
+    # Test evaluation
+    print(f"\n{'='*60}")
+    print("TEST EVALUATION (held-out data)")
+    print(f"{'='*60}")
+
+    test_dataset = CodeSnippetDataset(test_path, tokenizer, MAX_LEN)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+
+    state_dict = torch.load(f"{OUTPUT_DIR}/pytorch_model.bin", map_location=DEVICE)
+    load_state_dict_safe(model, state_dict)
+
+    # Threshold from validation
+    val_final = evaluate(model, val_loader, DEVICE, criterion)
+    chosen_thresh = val_final['best_threshold']
+    print(f"  Threshold: {chosen_thresh} (from validation)")
+
+    # Test forward pass
+    model.eval()
+    all_logits_test, all_labels_test = [], []
+    with torch.no_grad():
+        for batch in tqdm(test_loader, desc="Test inference", leave=False):
+            ids = batch['input_ids'].to(DEVICE, non_blocking=True)
+            mask = batch['attention_mask'].to(DEVICE, non_blocking=True)
+            labs = batch['labels'].to(DEVICE, non_blocking=True)
+            with torch.amp.autocast(device_type=DEVICE, dtype=torch.bfloat16, enabled=(DEVICE == "cuda")):
+                logits = model(ids, mask)
+            all_logits_test.append(logits.cpu())
+            all_labels_test.append(labs.cpu())
+
+    test_logits = torch.cat(all_logits_test, dim=0)
+    test_labels = torch.cat(all_labels_test, dim=0).numpy()
+    test_probs = F.softmax(test_logits, dim=1)[:, 1].float().numpy()
+    test_preds = (test_probs >= chosen_thresh).astype(int)
+
+    test_f1 = f1_score(test_labels, test_preds, average='macro', zero_division=0)
+    test_clean_r = recall_score(test_labels, test_preds, pos_label=0, zero_division=0)
+    test_buggy_r = recall_score(test_labels, test_preds, pos_label=1, zero_division=0)
+    test_acc = (test_preds == test_labels).mean()
+    test_auc = roc_auc_score(test_labels, test_probs) if len(np.unique(test_labels)) > 1 else 0.5
+    test_ap = average_precision_score(test_labels, test_probs) if len(np.unique(test_labels)) > 1 else 0.5
+
+    print(f"\nTest Results (frozen threshold={chosen_thresh}):")
+    print(f"  Accuracy:     {test_acc:.4f}")
+    print(f"  AUC:          {test_auc:.4f}")
+    print(f"  AP:           {test_ap:.4f}")
+    print(f"  Macro-F1:     {test_f1:.4f}")
+    print(f"  Clean Recall: {test_clean_r:.4f}")
+    print(f"  Buggy Recall: {test_buggy_r:.4f}")
+
+    os.makedirs(f"{OUTPUT_DIR}/results", exist_ok=True)
+    test_results = {
+        'dataset': CSV_FILE,
+        'language': 'csharp',
+        'model': MODEL_NAME,
+        'approach': 'single-snippet classification',
+        'threshold': chosen_thresh,
+        'threshold_source': 'validation (not test)',
+        'test_accuracy': float(test_acc),
+        'test_auc': float(test_auc),
+        'test_ap': float(test_ap),
+        'test_macro_f1': float(test_f1),
+        'test_clean_recall': float(test_clean_r),
+        'test_buggy_recall': float(test_buggy_r),
+        'val_macro_f1': best_val_f1,
+    }
+    with open(f"{OUTPUT_DIR}/results/test_results.json", 'w') as f:
+        json.dump(test_results, f, indent=2)
+
+    deployment = {
+        'model': MODEL_NAME,
+        'model_type': 'CodeBERT single-snippet classifier (C#)',
+        'decision_threshold': chosen_thresh,
+        'usage': {
+            'if_P_buggy_gte_threshold': 'Flag as buggy -> call Qwen for fix + explanation',
+            'if_P_buggy_lt_threshold':  'Mark as clean',
+        },
+        'expected_performance': {
+            'macro_f1': float(test_f1),
+            'clean_recall': float(test_clean_r),
+            'buggy_recall': float(test_buggy_r),
+        }
+    }
+    with open(f"{OUTPUT_DIR}/deployment_policy.json", 'w') as f:
+        json.dump(deployment, f, indent=2)
+
+    print(f"\nSaved to: {OUTPUT_DIR}/results/test_results.json")
+    print(f"          {OUTPUT_DIR}/deployment_policy.json")
 
 
 if __name__ == "__main__":

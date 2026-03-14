@@ -3,6 +3,7 @@ from flask_cors import CORS
 import os
 from models.CodeBERT.classifier import CodeClassifier
 from models.CodeBERT_Java.classifier import JavaCodeClassifier
+from models.CodeBERT_CSharp.classifier import CSharpCodeClassifier
 from models.codebert_baselines.baseline import run_static_analysis
 from models.llm.tutor import generate_educational_explanation
 
@@ -14,10 +15,12 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
 # Language-specific classifiers
 python_classifier = CodeClassifier()
 java_classifier = JavaCodeClassifier()
+csharp_classifier = CSharpCodeClassifier()
 
 CLASSIFIERS = {
     "python": python_classifier,
     "java": java_classifier,
+    "csharp": csharp_classifier,
 }
 
 
@@ -35,8 +38,10 @@ def review():
                 language = "java"
             elif filename.endswith(".py"):
                 language = "python"
+            elif filename.endswith(".cs"):
+                language = "csharp"
             else:
-                return jsonify({"error": "Only .py and .java files are supported."}), 400
+                return jsonify({"error": "Only .py, .java, and .cs files are supported."}), 400
             try:
                 code = file.read().decode("utf-8")
             except Exception:
