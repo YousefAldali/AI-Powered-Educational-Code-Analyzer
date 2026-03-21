@@ -4,22 +4,46 @@ import styles from './TutorPanel.module.css'
 
 // Helper components for the different feedback sub-sections
 
-function Verdict({ label }) {
+function Verdict({ label, codebertLabel, hasStaticIssues }) {
     const isBuggy = label?.toLowerCase() === 'buggy'
+    const isUncertain = label?.toLowerCase() === 'uncertain'
+
+    // Determine the subtitle based on what actually flagged the code
+    let subtitle = 'No deep logical bugs were detected. Great work!'
+    if (isBuggy) {
+        const cbClean = codebertLabel?.toLowerCase() === 'clean'
+        if (cbClean && hasStaticIssues) {
+            subtitle = 'Security issues were found by static analysis (Bandit).'
+        } else if (hasStaticIssues) {
+            subtitle = 'Issues found by both CodeBERT and static analysis.'
+        } else {
+            subtitle = 'CodeBERT found potential logical issues in your code.'
+        }
+    } else if (isUncertain) {
+        subtitle = 'CodeBERT is uncertain — review the details below.'
+    }
+
+    // Pick the right visual style for each state
+    const verdictStyle = isBuggy
+        ? styles.verdictBuggy
+        : isUncertain
+            ? styles.verdictUncertain
+            : styles.verdictClean
+
+    const verdictIcon = isBuggy ? '⚠' : isUncertain ? '?' : '✓'
+    const verdictTitle = isBuggy ? 'Issues Detected' : isUncertain ? 'Needs Review' : 'Clean Code!'
+
     return (
-        <div className={`${styles.verdict} ${isBuggy ? styles.verdictBuggy : styles.verdictClean}`}>
-            <span className={styles.verdictIcon}>{isBuggy ? '⚠' : '✓'}</span>
+        <div className={`${styles.verdict} ${verdictStyle}`}>
+            <span className={styles.verdictIcon}>{verdictIcon}</span>
             <div>
-                <div className={styles.verdictTitle}>{isBuggy ? 'Bugs Detected' : 'Clean Code!'}</div>
-                <div className={styles.verdictSub}>
-                    {isBuggy
-                        ? 'CodeBERT found potential logical issues in your code.'
-                        : 'No deep logical bugs were detected. Great work!'}
-                </div>
+                <div className={styles.verdictTitle}>{verdictTitle}</div>
+                <div className={styles.verdictSub}>{subtitle}</div>
             </div>
         </div>
     )
 }
+
 
 function StaticIssues({ issues }) {
     if (!issues || issues.length === 0) return null
@@ -128,7 +152,11 @@ export default function TutorPanel({ result, isLoading, error }) {
 
                 {!isLoading && !error && result && (
                     <div className={styles.results}>
-                        <Verdict label={result.prediction?.label} />
+                        <Verdict
+                            label={result.prediction?.label}
+                            codebertLabel={result.prediction?.codebert_label}
+                            hasStaticIssues={result.static_analysis?.issues?.length > 0}
+                        />
                         <StaticIssues issues={result.static_analysis?.issues} />
                         <TutorExplanation explanation={result.educational_explanation} />
                     </div>

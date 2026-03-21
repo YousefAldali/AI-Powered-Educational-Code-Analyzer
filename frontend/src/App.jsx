@@ -4,7 +4,7 @@ import TutorPanel from './components/TutorPanel/TutorPanel'
 import { useReview } from './hooks/useReview'
 import styles from './App.module.css'
 
-const PLACEHOLDER = `# Paste your Python or Java code here
+const PLACEHOLDER = `# Paste your Python, Java, or C# code here
 # The AI Tutor will explain any bugs it finds
 
 def calculate_average(numbers):
@@ -31,7 +31,7 @@ export default function App() {
         const file = e.target.files?.[0]
         if (!file) return
         setFileName(file.name)
-        const lang = file.name.endsWith('.java') ? 'java' : 'python'
+        const lang = file.name.endsWith('.java') ? 'java' : file.name.endsWith('.cs') ? 'csharp' : 'python'
         setLanguage(lang)
         const reader = new FileReader()
         reader.onload = (ev) => setCode(ev.target.result ?? '')
@@ -96,7 +96,7 @@ export default function App() {
                             className={styles.uploadBtn}
                             onClick={() => fileInputRef.current?.click()}
                             disabled={isLoading}
-                            title="Upload a .py or .java file"
+                            title="Upload a .py, .java, or .cs file"
                         >
                             ↑ Upload File
                         </button>
@@ -104,21 +104,21 @@ export default function App() {
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept=".py,.java"
+                            accept=".py,.java,.cs"
                             className={styles.hiddenInput}
                             onChange={handleFileChange}
                         />
 
                         {/* Language toggle */}
                         <div className={styles.langToggle}>
-                            {['python', 'java'].map((lang) => (
+                            {['python', 'java', 'csharp'].map((lang) => (
                                 <button
                                     key={lang}
                                     className={`${styles.langBtn} ${language === lang ? styles.langBtnActive : ''}`}
                                     onClick={() => setLanguage(lang)}
                                     disabled={isLoading}
                                 >
-                                    {lang.toUpperCase()}
+                                    {lang === 'csharp' ? 'C#' : lang.toUpperCase()}
                                 </button>
                             ))}
                         </div>
