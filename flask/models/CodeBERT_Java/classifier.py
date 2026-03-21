@@ -88,10 +88,26 @@ class JavaCodeClassifier:
             "logits": logits.tolist()
         }
 
+    def _apply_confidence_gating(self, result):
+        # Apply confidence thresholds to avoid false positives from low-confidence predictions
+        prob_buggy = result["probability_buggy"]
+        if prob_buggy >= BUGGY_THRESHOLD:
+            result["label"] = "buggy"
+            result["confidence"] = prob_buggy
+        elif prob_buggy >= UNCERTAIN_THRESHOLD:
+            result["label"] = "uncertain"
+            result["confidence"] = prob_buggy
+        else:
+            result["label"] = "clean"
+            result["raw_prediction"] = 0
+            result["confidence"] = 1.0 - prob_buggy
+        return result
+
     def classify_smart(self, code: str):
-        # Short code: classify directly
+        # Short code: classify directly with confidence gating
         if len(code) < SHORT_CODE_THRESHOLD:
             result = self.classify(code)
+            result = self._apply_confidence_gating(result)
             result["method"] = "direct"
             result["flagged_functions"] = []
             result["total_functions"] = 0
@@ -103,18 +119,7 @@ class JavaCodeClassifier:
         if not chunks:
             # Couldn't parse or no methods found classify whole file
             result = self.classify(code)
-            prob_buggy = result["probability_buggy"]
-            if prob_buggy >= BUGGY_THRESHOLD:
-                result["label"] = "buggy"
-                result["confidence"] = prob_buggy
-            elif prob_buggy >= UNCERTAIN_THRESHOLD:
-                result["label"] = "uncertain"
-                result["confidence"] = prob_buggy
-            else:
-                result["label"] = "clean"
-                result["raw_prediction"] = 0
-                result["confidence"] = 1.0 - prob_buggy
-
+            result = self._apply_confidence_gating(result)
             result["method"] = "direct"
             result["flagged_functions"] = []
             result["total_functions"] = 0

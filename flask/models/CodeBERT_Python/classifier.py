@@ -12,8 +12,6 @@ SHORT_CODE_THRESHOLD = 1500  # ~40 lines
 
 def _extract_functions(code: str):
     # Parse Python source into individual top-level functions and classes.
-    # Returns a list of dicts
-    # Falls back to the full code if parsing fails.
     try:
         tree = ast.parse(code)
     except SyntaxError:
@@ -81,10 +79,26 @@ class CodeClassifier:
             "logits": logits.tolist()
         }
 
+    def _apply_confidence_gating(self, result):
+        # Apply confidence thresholds to avoid false positives from low-confidence predictions
+        prob_buggy = result["probability_buggy"]
+        if prob_buggy >= BUGGY_THRESHOLD:
+            result["label"] = "buggy"
+            result["confidence"] = prob_buggy
+        elif prob_buggy >= UNCERTAIN_THRESHOLD:
+            result["label"] = "uncertain"
+            result["confidence"] = prob_buggy
+        else:
+            result["label"] = "clean"
+            result["raw_prediction"] = 0
+            result["confidence"] = 1.0 - prob_buggy
+        return result
+
     def classify_smart(self, code: str):
-        # Short code: classify directly like before
+        # Short code: classify directly with confidence gating
         if len(code) < SHORT_CODE_THRESHOLD:
             result = self.classify(code)
+            result = self._apply_confidence_gating(result)
             result["method"] = "direct"
             result["flagged_functions"] = []
             result["total_functions"] = 0
@@ -96,18 +110,7 @@ class CodeClassifier:
         if not chunks:
             # Couldn't parse or no functions found — classify whole file with confidence filter
             result = self.classify(code)
-            prob_buggy = result["probability_buggy"]
-            if prob_buggy >= BUGGY_THRESHOLD:
-                result["label"] = "buggy"
-                result["confidence"] = prob_buggy
-            elif prob_buggy >= UNCERTAIN_THRESHOLD:
-                result["label"] = "uncertain"
-                result["confidence"] = prob_buggy
-            else:
-                result["label"] = "clean"
-                result["raw_prediction"] = 0
-                result["confidence"] = 1.0 - prob_buggy
-
+            result = self._apply_confidence_gating(result)
             result["method"] = "direct"
             result["flagged_functions"] = []
             result["total_functions"] = 0

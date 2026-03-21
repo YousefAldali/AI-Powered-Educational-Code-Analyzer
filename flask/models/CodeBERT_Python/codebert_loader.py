@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import torch
 import torch.nn as nn
@@ -29,27 +28,13 @@ class CodeBERTModel:
     def __init__(self):
         print("Loading CodeBERT Model...")
 
-        # Base directory (flask/models)
-        self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Model lives alongside this file
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        model_abs_path = os.path.join(self.base_dir, "fine_tuned_model")
 
         # Load configuration
         self.max_length = 384  # Matches training script
         print(f"Using max_length: {self.max_length}")
-
-        # Import config from base_dir (flask/models)
-        try:
-            sys.path.append(self.base_dir)
-            from codebert_config import CONFIG
-            config_model_path = CONFIG.get("model_path", "")
-        except ImportError as e:
-            print(f"Warning: Could not load codebert_config.py: {e}")
-            config_model_path = ""
-
-        # Resolve path
-        if config_model_path:
-            model_abs_path = os.path.abspath(os.path.join(self.base_dir, config_model_path))
-        else:
-            model_abs_path = os.path.join(self.base_dir, "CodeBERT", "fine_tuned_model")
 
         try:
             self.device = torch.device("mps") if torch.backends.mps.is_available() else (torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
