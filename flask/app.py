@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-from models.CodeBERT.classifier import CodeClassifier
+from models.CodeBERT_Python.classifier import CodeClassifier
 from models.CodeBERT_Java.classifier import JavaCodeClassifier
 from models.CodeBERT_CSharp.classifier import CSharpCodeClassifier
 from models.codebert_baselines.baseline import run_static_analysis
@@ -69,13 +69,21 @@ def review():
     static_issues = static_result.get("issues", [])
 
     # 2. CodeBERT deep learning prediction (smart: chunks large files into functions/methods)
+    # second check: CodeBERT AI (it can split big files)
     codebert_result = classifier.classify_smart(code)
     cb_label = codebert_result.get("label", "clean").lower()
     is_buggy = cb_label == "buggy"
     is_uncertain = cb_label == "uncertain"
     codebert_confidence = codebert_result.get("confidence", None)
 
-    # 3. Educational LLM explanation (only if bugs found or uncertain)
+    # 3. Combine verdicts: if Bandit finds security issues but CodeBERT says clean,
+    overall_label = codebert_result.get("label", "clean")
+    if static_issues and cb_label == "clean":
+        overall_label = "buggy"
+    elif static_issues and cb_label == "uncertain":
+        overall_label = "buggy"
+
+    # 4. Educational LLM explanation (only if bugs found or uncertain)
     llm_explanation = None
     if is_buggy or is_uncertain or static_issues:
         llm_explanation = generate_educational_explanation(
@@ -88,7 +96,8 @@ def review():
 
     return jsonify({
         "prediction": {
-            "label": codebert_result.get("label", "clean"),   # "buggy" | "clean"
+            "label": overall_label,                             # Combined verdict
+            "codebert_label": codebert_result.get("label", "clean"),  # Original CodeBERT-only verdict
             "confidence": codebert_confidence,
             "method": codebert_result.get("method", "direct"),  # "direct" | "chunked"
         },
