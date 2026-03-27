@@ -1,0 +1,80 @@
+/* PROPER FLOWCHART STYLES */
+.fc { position: relative; width: 100%; padding: 2rem 0; }
+.fc svg { width: 100%; height: auto; display: block; }
+
+/* Node styles */
+.fc-node {
+  rx: 12; ry: 12;
+  stroke-width: 1.5;
+  transition: all 0.3s;
+}
+.fc text {
+  font-family: 'Inter', sans-serif;
+  fill: #f1f5f9;
+}
+.fc .fc-label {
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+}
+.fc .fc-title {
+  font-size: 13px; font-weight: 600;
+}
+.fc .fc-sub {
+  font-size: 10px; fill: #94a3b8;
+}
+.fc .fc-arrow {
+  stroke-width: 2;
+  fill: none;
+  marker-end: url(#arrowhead);
+}
+.fc .fc-arrow-red {
+  stroke: #ef4444;
+  marker-end: url(#arrowhead-red);
+}
+.fc .fc-arrow-green {
+  stroke: #10b981;
+  marker-end: url(#arrowhead-green);
+}
+.fc .fc-arrow-blue {
+  stroke: #3b82f6;
+  marker-end: url(#arrowhead-blue);
+}
+.fc .fc-arrow-purple {
+  stroke: #8b5cf6;
+  marker-end: url(#arrowhead-purple);
+}
+.fc .fc-arrow-orange {
+  stroke: #f59e0b;
+  marker-end: url(#arrowhead-orange);
+}
+.fc .fc-arrow-cyan {
+  stroke: #06b6d4;
+  marker-end: url(#arrowhead-cyan);
+}
+.fc .fc-arrow-gray {
+  stroke: #475569;
+  marker-end: url(#arrowhead-gray);
+}
+
+/* Diamond (decision) */
+.fc .fc-diamond { stroke-width: 1.5; }
+
+/* Flowchart section title */
+.fc-section-title {
+  font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.fc-wrapper {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+}
+.fc-wrapper:hover { border-color: rgba(59,130,246,0.2); }
+.fc-caption {
+  text-align: center; font-size: 0.82rem;
+  color: var(--text-muted); margin-top: 1rem;
+  font-style: italic;
+}
