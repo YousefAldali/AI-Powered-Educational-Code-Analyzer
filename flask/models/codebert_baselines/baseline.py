@@ -65,7 +65,7 @@ def run_static_analysis(code_content: str, language: str = "python") -> Dict[str
                 # Bandit failed to return JSON, ignore
                 pass
 
-    except subprocess.TimeoutError:
+    except subprocess.TimeoutExpired:
         issues.append("[Performance] Review timed out (code ran too long).")
     except Exception as e:
         issues.append(f"[System Error] An unexpected issue occurred: {e}")
