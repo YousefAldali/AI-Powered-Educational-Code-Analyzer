@@ -2439,3 +2439,191 @@ This experiment strongly validates the necessity of task-specific fine-tuning.
  **End of Week 21:**
 This week I finally got past the stage where I was stuck.
 Now I have good results, a clean dataset direction, and a working full UI + API system, so I can actually move forward with the rest of the project.
+
+
+
+
+
+
+
+# Week 22 Progress Report
+
+## Overview
+
+This week covered three main areas: completing the Java dataset pipeline, running the final Python CodeBERT retrain on cleaned data, and training the C# model. I also ran a full system test and addressed several pipeline issues found during evaluation.
+
+---
+
+## 1. Java Dataset Pipeline
+
+### Datasets Collected
+
+| # | Dataset | Raw Pairs | Cleaned Pairs | Status |
+|---|---------|-----------|---------------|--------|
+| 1 | ManySStuBs4J (Zenodo) | 63,923 | 23,429 |  |
+| 2 | CodeXGLUE Bugs2Fix | 65,455 | 65,455 |  |
+| 3 | Vul4J (GitHub commits) | 318 pairs | 279 |  |
+| 4 | HuggingFace Java Vulnerability | 1,276 | 411 | |
+
+**Final combined dataset: 160,691 clean pairs** (saved as `java_ultimate_combined.csv`)
+
+The cleaning pipeline ran 5 steps across all sources: parsing raw formats into a unified schema, normalising whitespace, dropping invalid/duplicate pairs via MD5 hashing, and assigning sequential IDs for leakage-safe splitting. The format exactly matches the Python pipeline: `buggy_code`, `fixed_code`, `bug_type`, `id`, `language`.
+
+The dominant bug type is `code_refinement` at 73.7% (from CodeXGLUE), followed by mutation-style bugs from ManySStuBs4J (`CHANGE_IDENTIFIER`, `DIFFERENT_METHOD_SAME_ARGS`, etc.) and 690 CWE-based vulnerability pairs.
+
+---
+
+## 2. Java CodeBERT — Training & Evaluation
+
+### Baseline vs Fine-Tuned
+
+| Model | Accuracy | Macro-F1 | AUC | AP |
+|-------|----------|----------|-----|----|
+| Pre-trained (no fine-tuning) | 48.0% | 0.480 | 0.474 | — |
+| Fine-tuned (20 epochs) | **65.8%** | **0.657** | **0.735** | **0.710** |
+
+The pre-trained model is essentially random — the classifier head is randomly initialised with no task-specific knowledge. Fine-tuning improved Macro-F1 by +17.8 percentage points.
+
+Training used the same architecture and hyperparameters as the Python model (focal loss, AdamW, cosine schedule with 6% warmup, early stopping on patience=4). The threshold of 0.494 was selected via validation Macro-F1 sweep and frozen for test evaluation.
+
+**Confusion matrix (test set — 48,208 samples):**
+
+|  | Predicted Clean | Predicted Buggy |
+|--|--|--|
+| **Actual Clean** | 14,711 | 9,393 |
+| **Actual Buggy** | 7,101 | 17,003 |
+
+Bug recall (70.5%) is higher than clean recall (61%), which is the desirable direction for a code review tool — missing a real bug is worse than flagging something for review.
+
+### Comparison with Python Model
+
+| Language | Dataset Size | Accuracy | Macro-F1 | AUC | AP |
+|----------|-------------|----------|----------|-----|----|
+| Python | ~930K pairs | 66.3% | 0.663 | 0.756 | 0.770 |
+| Java | ~160K pairs | 65.8% | 0.657 | 0.735 | 0.710 |
+
+The Java model achieves near-identical performance to Python despite having 7.5× less training data. This confirms the Java dataset is high quality and the pipeline generalises well across languages.
+
+---
+
+## 3. Python CodeBERT — Retrain on Cleaned Data (v7)
+
+The Python model was retrained on `ultimate_combined_cleaned_v7.csv` (929,850 pairs after removing the problematic `defectors` source entries). Training ran for 13 epochs before early stopping.
+
+**Final test results:**
+
+| Metric | Value |
+|--------|-------|
+| Accuracy | 66.3% |
+| Macro-F1 | 0.663 |
+| AUC | 0.756 |
+| AP | 0.770 |
+| Clean Recall | 68.1% |
+| Buggy Recall | 64.6% |
+| Threshold | 0.494 |
+
+This is a modest but meaningful improvement over the previous run (which was affected by the ~16% noisy `defectors` pairs). The previous training showed validation loss rising while train loss kept dropping — a sign the model was partially fitting to noise. That behaviour is no longer present in v7.
+
+---
+
+## 4. C# CodeBERT — Training & Evaluation
+
+### Dataset
+
+The C# dataset was assembled from three sources:
+
+- Existing pairs (real bug fixes + synthetic): 3,298
+- InferredBugs (Microsoft): 2,561
+- SARD Juliet C# 1.3 (NIST, 103 CWE categories): 23,863
+- GitHub-mined pairs (PyDriller): 297
+
+After cleaning (removing identical pairs, duplicates, overly long snippets): **33,428 clean pairs**.
+
+### Results
+
+| Model | Accuracy | Macro-F1 | AUC | AP |
+|-------|----------|----------|-----|----|
+| Pre-trained baseline | 50.0% | 0.333 | 0.335 | 0.418 |
+| Fine-tuned (7 epochs) | **82.0%** | **0.820** | **0.934** | **0.933** |
+
+The C# model converged faster than Python and Java (early stopping at epoch 11 on validation, best checkpoint at epoch 7). The notably higher performance is likely due to the NIST SARD dataset providing very clean, clearly labelled vulnerability pairs across well-defined CWE categories — making the classification task more structured than real-world mined bugs.
+
+**Confusion matrix (test set — 10,030 samples):**
+
+|  | Predicted Clean | Predicted Buggy |
+|--|--|--|
+| **Actual Clean** | 4,171 | 844 |
+| **Actual Buggy** | 962 | 4,053 |
+
+---
+
+## 5. LLM Explanation Baselines (1,000-Sample Evaluation)
+
+The evaluation used 1,000 Python bug-fix pairs sampled exclusively from the held-out test split — no overlap with training data.
+
+### Detection Baselines (Section 4.4)
+
+Evaluated on 1,000 balanced Python samples (500 buggy, 500 clean) from the held-out test split.
+
+| Method | Accuracy | Macro-F1 | Buggy Recall | Clean Recall | Buggy Precision |
+|--------|----------|----------|-------------|-------------|----------------|
+| Bandit (static) | 50.0% | 0.35 | 2.0% | 98.0% | 50.0% |
+| Keyword Matching | 50.0% | 0.37 | 4.4% | 95.6% | 50.0% |
+| TF-IDF + LR | 49.6% | 0.48 | 32.4% | 66.8% | 49.4% |
+| **CodeBERT (fine-tuned)** | **66.3%** | **0.66** | **64.6%** | **68.1%** | **—** |
+
+### LLM Explanation Baselines (Section 4.5)
+
+| Baseline | Format OK | Hallucinated Diffs | Notes |
+|----------|-----------|--------------------|-------|
+| 1 — Template | 100% | 0% | Structured but fully generic; no bug-specific content |
+| 2 — Zero-shot Qwen | 0% | 27.8% | Contextual but unreliable; invents code changes |
+| 3 — Full pipeline | 100% | 0% | 89.3% LLM-generated bug-specific explanations |
+
+Baseline 3 (the full pipeline) combines the reliability of the template approach with the contextual quality of the LLM — structured format, grounded diffs, and specific educational content.
+
+---
+
+## 6. System Test — Full Application
+
+A 10-case integration test was run against all three deployed models.
+
+**Overall: 7/10 passed.**
+
+### Key Findings
+
+**What works well:**
+- Python CodeBERT correctly identifies swapped operators (=+ vs +=) and clean code
+- Java CodeBERT is strong on clear bugs (string == comparison, 98.6% confidence)
+- Static analysis overrides the model correctly for security patterns (e.g. eval())
+- Edge case handling (empty code, unsupported language, file upload) is solid
+
+**Issues found:**
+
+| Issue | Severity | Notes |
+|-------|----------|-------|
+| C# model uncertain on real-world code (~50% confidence) | High | Model likely hasn't generalised beyond SARD-style patterns |
+| Pattern analyser not invoked when CodeBERT says "clean" | Medium | Mutable defaults, `== None` can slip through |
+| No static analysis for Java/C# (Bandit is Python-only) | Medium | Java/C# rely entirely on CodeBERT + pattern layer |
+| Flask debug mode enabled in production | Low | Loads models twice; exposes debugger |
+
+The C# issue is notable — the high test-set F1 (0.82) reflects performance on SARD-style synthetic pairs, but real-world snippets are structurally different. The pattern-based fallback (`code_patterns.py`) does still catch common C# issues (missing `using`, string interpolation) even when the model is uncertain.
+
+---
+
+## 7. Pattern Analyser — New Rules Added
+
+Three new patterns were added to `code_patterns.py` to cover additional structural bugs identified during the user evaluation:
+
+- `sorted_list = numbers.sort()` — assigning `.sort()` which returns `None`
+- `if n % 2 = 0:` — using `=` instead of `==` in a condition
+- `print "text"` — Python 2 print syntax in Python 3
+
+All three now produce correct `buggy` predictions with full educational explanations on the deployed server.
+
+**Why some bugs cannot be detected (important for evaluation discussion):**
+
+Pure semantic/logic bugs — such as writing `n = largest` when `largest = n` was intended, or using `>` instead of `<` in a comparison — cannot be reliably detected by any automated tool. The code is syntactically valid and structurally normal; only the programmer's intent distinguishes it from correct code. This is a genuine limitation worth discussing explicitly in the report's evaluation section: pattern matching and fine-tuned transformers handle structural regularities well, but intent-based semantic errors remain an open research problem.
+
+---
+
