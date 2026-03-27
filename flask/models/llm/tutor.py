@@ -290,6 +290,85 @@ def _placeholder_explanation(code: str, language: str, codebert_label: str, stat
             "Catching the base `Exception` class swallows all errors, making bugs invisible.",
             "Catch specific types: `catch (IOException ex)` or `except ValueError:`.",
         ),
+        "infinite_loop": (
+            "Every `while` loop must have a way to terminate — either by modifying the loop variable "
+            "or by using `break`/`return` inside the body.",
+            "`while i < n: ... i += 1` — always increment the counter inside the loop",
+        ),
+        "missing_self": (
+            "Inside a class method, local variables and instance attributes are different. "
+            "Use `self.variable` to read or modify the object's state.",
+            "`self.count += 1` (modifies the object) vs `count += 1` (modifies a local variable that disappears)",
+        ),
+        "indentation_error": (
+            "Python uses indentation (whitespace) to define code blocks. "
+            "Unlike most languages, incorrect indentation in Python is not just a style issue — it changes the program's meaning or causes errors.",
+            "Always use 4 spaces per indent level. Never mix tabs and spaces. Configure your editor to show whitespace characters.",
+        ),
+        "index_out_of_bounds": (
+            "Array indices start at 0 and end at `length - 1`. Accessing an index outside this range crashes the program.",
+            "`array[array.length - 1]` is the last element. `array[array.length]` throws `ArrayIndexOutOfBoundsException`.",
+        ),
+        "wrapper_comparison": (
+            "Wrapper types (Integer, Boolean, etc.) are objects. Use `.equals()` to compare their values, not `==`.",
+            "`Integer a = 200; Integer b = 200; a == b` is `false` because they are different objects!",
+        ),
+        "missing_break": (
+            "Each `case` in a switch statement needs a `break`, `return`, or `throw` to prevent fall-through.",
+            "`case 1: doSomething(); break;` — without `break`, execution continues into the next case.",
+        ),
+        "integer_division": (
+            "Dividing two integers discards the decimal part. `5 / 2` gives `2`, not `2.5`.",
+            "Cast one operand: `(double) a / b` to get the full result.",
+        ),
+        "missing_braces": (
+            "Always use braces with if/for/while. Without them, only the next line belongs to the block.",
+            "`if (x) doA(); doB();` — `doB()` runs regardless of `x`! Use `if (x) { doA(); doB(); }`.",
+        ),
+        "missing_interpolation": (
+            "In C#, string interpolation requires a `$` prefix. Without it, `{name}` is just literal text.",
+            '`$"Hello {name}"` (interpolated) vs `"Hello {name}"` (literal curly braces).',
+        ),
+        "async_void": (
+            "`async void` methods cannot be awaited and their exceptions are unobservable — they crash the app.",
+            "Always use `async Task` instead of `async void`, except for event handlers.",
+        ),
+        "null_dereference": (
+            "Calling methods on a null reference crashes the program. Always check for null first.",
+            "Use null-conditional: `obj?.Method()` or guard: `if (obj != null) obj.Method()`.",
+        ),
+        "zero_init_multiply": (
+            "Multiplying by 0 always gives 0. For factorial or product calculations, the starting value must be 1 (the multiplicative identity).",
+            "`result = 0; result *= 5;` → still 0! Use `result = 1; result *= 5;` → gives 5.",
+        ),
+        "immutable_string": (
+            "Strings are immutable — methods like `.upper()`, `.toUpperCase()`, `.replace()` return a NEW string. The original is never changed.",
+            '`text.upper()` does nothing alone. Use `text = text.upper()` to save the result.',
+        ),
+        "off_by_one": (
+            "Array indices go from 0 to length-1. Using `<=` in a loop condition goes one past the end and causes an index error.",
+            "`for (int i = 0; i <= arr.length; i++)` crashes! Use `i < arr.length`.",
+        ),
+        "wrong_case": (
+            "Java and C# are case-sensitive. Class names must match exactly — `system` is not the same as `System`.",
+            "`system.out.println()` won't compile. Use `System.out.println()`.",
+        ),
+        "missing_argument": (
+            "Some methods require arguments in certain languages. Java's `String.split()` needs a regex, unlike Python's `str.split()`.",
+            '`text.split()` works in Python but not Java. Use `text.split(" ")` in Java.',
+        ),
+        "assignment_in_condition": (
+            "In most languages, `=` is for assignment (saving a value), and `==` is for comparison (checking a value).",
+            "Change `if x = 5:` to `if x == 5:`.",
+        ),
+        "sort_assignment": (
+            "In Python, `.sort()` modifies the list in place and returns `None`. It does not return a new list.",
+            "`y = x.sort()` makes `y` None. Just do `x.sort()` on its own line, or use `y = sorted(x)`.",
+        ),
+        "python2_print": (
+            "In Python 3, `print` became a function, meaning you must put the text inside parentheses.",
+            "Change `print \"Hello\"` to `print(\"Hello\")`.",
+        ),
     }
     if has_patterns:
         main_type = patterns[0]["type"]
@@ -329,6 +408,18 @@ def _placeholder_explanation(code: str, language: str, codebert_label: str, stat
         "resource_leak": lambda _: (
             "If an exception is thrown between opening and closing a file, "
             "what happens to the file handle?"
+        ),
+        "infinite_loop": lambda _: (
+            "If you remove the increment statement from a `while` loop, "
+            "what happens when you run it? How would you fix it?"
+        ),
+        "missing_self": lambda p: (
+            f"What is the difference between `{p.get('line_content', 'count += 1')}` and "
+            f"`self.count += 1` inside a class method? Which one changes the object?"
+        ),
+        "indentation_error": lambda _: (
+            "What happens if you mix tabs and spaces in Python 3? "
+            "Try creating a file with mixed indentation and running it — what error do you get?"
         ),
     }
     if has_patterns:
