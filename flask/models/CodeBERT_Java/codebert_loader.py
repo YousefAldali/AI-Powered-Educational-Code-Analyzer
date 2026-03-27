@@ -87,7 +87,7 @@ class CodeBERTModelJava:
     def tokenize(self, code: str):
         return self.tokenizer(
             code,
-            padding="max_length",
+            padding=True,
             max_length=self.max_length,
             truncation=True,
             return_tensors="pt"
