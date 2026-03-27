@@ -6,6 +6,7 @@ from models.CodeBERT_Java.classifier import JavaCodeClassifier
 from models.CodeBERT_CSharp.classifier import CSharpCodeClassifier
 from models.codebert_baselines.baseline import run_static_analysis
 from models.llm.tutor import generate_educational_explanation
+from models.llm.code_patterns import analyze_code
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]}})
@@ -83,14 +84,30 @@ def review():
     elif static_issues and cb_label == "uncertain":
         overall_label = "buggy"
 
-    # 4. Educational LLM explanation (only if bugs found or uncertain)
+    # 3b. Pattern analysis: catch obvious bugs that CodeBERT may miss
+    code_patterns = analyze_code(code, language)
+    high_severity_patterns = [p for p in code_patterns if p.get("severity") == "high"]
+    med_severity_patterns = [p for p in code_patterns if p.get("severity") in ("high", "medium")]
+
+    # Override to buggy if high or medium severity patterns found regardless of CodeBERT
+    if med_severity_patterns and cb_label in ("clean", "uncertain"):
+        overall_label = "buggy"
+
+    # 3c. Smart uncertain handling (no patterns found):
+    #   - If NO patterns and confidence < 0.52 → downgrade to clean
+    #   - If NO patterns but confidence >= 0.52 → keep uncertain (CodeBERT suspects a bug)
+    if cb_label == "uncertain" and overall_label == "uncertain":
+        if codebert_confidence is not None and codebert_confidence < 0.52 and not static_issues:
+            overall_label = "clean"
+
+    # 4. Educational LLM explanation (only when final verdict is NOT clean)
     llm_explanation = None
-    if is_buggy or is_uncertain or static_issues:
+    if overall_label != "clean":
         llm_explanation = generate_educational_explanation(
             code=code,
             language=language,
             static_issues=static_issues,
-            codebert_label=codebert_result.get("label", "clean"),
+            codebert_label=overall_label,
             flagged_functions=codebert_result.get("flagged_functions", [])
         )
 
