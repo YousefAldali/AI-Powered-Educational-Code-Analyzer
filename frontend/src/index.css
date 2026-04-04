@@ -103,3 +103,19 @@ html, body, #root {
 
 .tutor-markdown strong { color: var(--text-primary); font-weight: 600; }
 .tutor-markdown em { color: var(--accent); font-style: normal; }
+
+/* Monaco editor error line decorations (must be global) */
+.error-line-highlight {
+  background: rgba(248, 113, 113, 0.12) !important;
+  border-left: 3px solid #f87171 !important;
+}
+
+.error-glyph-margin {
+  background: #f87171;
+  border-radius: 50%;
+  width: 8px !important;
+  height: 8px !important;
+  margin-left: 4px;
+  margin-top: 6px;
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.5);
+}

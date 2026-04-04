@@ -48,9 +48,10 @@ const THEME_DEF = {
     },
 }
 
-export default function CodeEditor({ value, onChange, language, onLanguageChange }) {
+export default function CodeEditor({ value, onChange, language, onLanguageChange, errorLines = [] }) {
     const editorRef = useRef(null)
     const monacoRef = useRef(null)
+    const decorationsRef = useRef([])
 
     function handleMount(editor, monaco) {
         editorRef.current = editor
@@ -58,6 +59,36 @@ export default function CodeEditor({ value, onChange, language, onLanguageChange
         monaco.editor.defineTheme('tutorTheme', THEME_DEF)
         monaco.editor.setTheme('tutorTheme')
     }
+
+    // Apply error line decorations when errorLines change
+    useEffect(() => {
+        const editor = editorRef.current
+        const monaco = monacoRef.current
+        if (!editor || !monaco) return
+
+        const decorations = errorLines.map(line => ({
+            range: new monaco.Range(line, 1, line, 1),
+            options: {
+                isWholeLine: true,
+                className: 'error-line-highlight',
+                glyphMarginClassName: 'error-glyph-margin',
+                glyphMarginHoverMessage: { value: '⚠ Issue detected on this line' },
+                overviewRuler: {
+                    color: '#f87171',
+                    position: monaco.editor.OverviewRulerLane.Full,
+                },
+                minimap: {
+                    color: '#f87171',
+                    position: monaco.editor.MinimapPosition.Inline,
+                },
+            },
+        }))
+
+        decorationsRef.current = editor.deltaDecorations(
+            decorationsRef.current,
+            decorations
+        )
+    }, [errorLines])
 
     // Auto-detect language when value changes externally (e.g. file upload)
     useEffect(() => {
@@ -79,6 +110,11 @@ export default function CodeEditor({ value, onChange, language, onLanguageChange
                     <span /><span /><span />
                 </span>
                 <span className={styles.langBadge}>{language.toUpperCase()}</span>
+                {errorLines.length > 0 && (
+                    <span className={styles.errorBadge}>
+                        {errorLines.length} issue{errorLines.length > 1 ? 's' : ''} found
+                    </span>
+                )}
             </div>
             <Editor
                 height="420px"
@@ -105,6 +141,7 @@ export default function CodeEditor({ value, onChange, language, onLanguageChange
                     cursorBlinking: 'smooth',
                     smoothScrolling: true,
                     contextmenu: false,
+                    glyphMargin: true,
                 }}
             />
         </div>
