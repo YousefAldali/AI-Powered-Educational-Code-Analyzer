@@ -122,6 +122,7 @@ def review():
             "issues": static_issues,
             "summary": static_result.get("summary", ""),
         },
+        "code_patterns": code_patterns,                         # Pattern matches with line numbers
         "educational_explanation": llm_explanation,           # Markdown string from Qwen
         "language": language,
         "flagged_functions": codebert_result.get("flagged_functions", []),
