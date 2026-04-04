@@ -36,7 +36,24 @@ export function useReview() {
                 body,
             })
 
-            const data = await res.json()
+            // Safe JSON parsing — handle empty or non-JSON responses
+            const text = await res.text()
+            let data
+            try {
+                data = text ? JSON.parse(text) : null
+            } catch {
+                throw new Error(
+                    `Server returned invalid response (${res.status}). ` +
+                    'Make sure the Flask backend is running on port 5000.'
+                )
+            }
+
+            if (!data) {
+                throw new Error(
+                    'Empty response from server. ' +
+                    'Make sure the Flask backend is running: cd flask && python app.py'
+                )
+            }
 
             if (!res.ok) {
                 throw new Error(data.error ?? `Server error: ${res.status}`)
@@ -44,7 +61,11 @@ export function useReview() {
 
             setResult(data)
         } catch (err) {
-            setError(err.message ?? 'Unknown error')
+            if (err.name === 'TypeError' && err.message.includes('fetch')) {
+                setError('Cannot reach the server. Make sure the Flask backend is running on port 5000.')
+            } else {
+                setError(err.message ?? 'Unknown error')
+            }
         } finally {
             setLoading(false)
         }
