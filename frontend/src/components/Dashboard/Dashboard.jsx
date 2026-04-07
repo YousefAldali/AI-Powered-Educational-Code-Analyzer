@@ -219,9 +219,18 @@ function SectionNav() {
 
 export default function Dashboard() {
     const [modalImg, setModalImg] = useState(null)
+    const [lightMode, setLightMode] = useState(false)
 
     return (
-        <div className={styles.dashboard}>
+        <div className={`${styles.dashboard} ${lightMode ? styles.dashboardLight : ''}`}>
+            <button
+                className={styles.themeToggle}
+                onClick={() => setLightMode(prev => !prev)}
+                aria-label="Toggle theme"
+                title={lightMode ? 'Switch to dark mode' : 'Switch to light mode'}
+            >
+                {lightMode ? '🌙' : '☀️'}
+            </button>
             <SectionNav />
             <BackToTop />
 
@@ -242,8 +251,8 @@ export default function Dashboard() {
                     </FadeUp>
                     <FadeUp>
                         <p className={styles.heroDesc}>
-                            A 3-layer pipeline combining static analysis, fine‑tuned CodeBERT classification,
-                            and grounded LLM tutoring to provide educational feedback for novice programmers.
+                            A multi-layered analysis pipeline combining static analysis, transformer-based classification,
+                            and LLM-generated explanations to provide effective, educational feedback for novice programmers.
                         </p>
                     </FadeUp>
                     <FadeUp>
@@ -269,8 +278,8 @@ export default function Dashboard() {
             {/* ── PROBLEM & IDEA ── */}
             <section id="problem" className={styles.section}>
                 <div className={styles.container}>
-                    <FadeUp><SectionLabel>The Problem &amp; The Idea</SectionLabel></FadeUp>
-                    <FadeUp><SectionTitle sub="Tools can show errors or even fix code, but they often do not teach the concept behind the bug.">Why This Project Exists</SectionTitle></FadeUp>
+                    <FadeUp><SectionLabel>Motivation &amp; Research Question</SectionLabel></FadeUp>
+                    <FadeUp><SectionTitle sub="Existing tools fix code or flag errors — but they don't teach the concept behind the bug.">Why This Project Exists</SectionTitle></FadeUp>
 
                     <FadeUp>
                         <div className={styles.cardGrid2}>
@@ -278,15 +287,14 @@ export default function Dashboard() {
                                 <div className={`${styles.cardIcon} ${styles.cardIconBlue}`}>P</div>
                                 <div className={styles.cardTitle}>The Problem</div>
                                 <div className={styles.cardText}>
-                                    Traditional tools (compilers, linters) indicate that an error exists, but they don't explain the underlying concept. Students may rely on AI to get fixes directly, missing the opportunity to learn why the bug occurred.
+                                    Compilers and linters say <em>that</em> something is wrong. Auto-fix tools silently correct it. Neither teaches <em>why</em> the bug happened.
                                 </div>
                             </GlassCard>
                             <GlassCard>
                                 <div className={`${styles.cardIcon} ${styles.cardIconGreen}`}>S</div>
-                                <div className={styles.cardTitle}>The Idea</div>
+                                <div className={styles.cardTitle}>Our Approach</div>
                                 <div className={styles.cardText}>
-                                    Combine classifier‑based bug detection with a grounded tutor explanation — instead of using only one model.
-                                    The classifier decides <strong>WHAT</strong> is wrong, the LLM explains <strong>WHY</strong> it is wrong.
+                                    A CodeBERT classifier decides <strong>what</strong> is wrong. A grounded LLM explains <strong>why</strong>. Fast, deterministic detection + natural-language tutoring.
                                 </div>
                             </GlassCard>
                         </div>
@@ -294,7 +302,7 @@ export default function Dashboard() {
 
                     <FadeUp>
                         <div className={styles.callout}>
-                            <strong>Research Question:</strong> Can a multi-layer pipeline provide effective educational feedback for novice programmers?
+                            <strong>Research Question:</strong> Can a multi-layered analysis pipeline combining static analysis, transformer-based classification, and LLM-generated explanations provide effective, educational feedback for novice programmers?
                         </div>
                     </FadeUp>
 
@@ -302,18 +310,18 @@ export default function Dashboard() {
                         <div className={styles.cardGrid3}>
                             <GlassCard className={styles.centeredCard}>
                                 <div className={`${styles.cardIcon} ${styles.cardIconBlue} ${styles.cardIconCentered}`}>1</div>
-                                <div className={styles.cardTitle}>Speed</div>
-                                <div className={styles.cardText}>CodeBERT classifies in milliseconds on CPU; LLMs need seconds + GPU</div>
+                                <div className={styles.cardTitle}>Speed &amp; Cost</div>
+                                <div className={styles.cardText}>Classifier runs in milliseconds on CPU; LLM needs seconds + a GPU.</div>
                             </GlassCard>
                             <GlassCard className={styles.centeredCard}>
                                 <div className={`${styles.cardIcon} ${styles.cardIconPurple} ${styles.cardIconCentered}`}>2</div>
-                                <div className={styles.cardTitle}>Reproducibility</div>
-                                <div className={styles.cardText}>Classifier gives identical output every time; LLMs are stochastic</div>
+                                <div className={styles.cardTitle}>Determinism</div>
+                                <div className={styles.cardText}>Classifier gives identical output every run. LLM is stochastic — so we anchor it to ground truth.</div>
                             </GlassCard>
                             <GlassCard className={styles.centeredCard}>
                                 <div className={`${styles.cardIcon} ${styles.cardIconCyan} ${styles.cardIconCentered}`}>3</div>
-                                <div className={styles.cardTitle}>No Hallucination</div>
-                                <div className={styles.cardText}>LLMs can invent bugs that don't exist; classifiers don't hallucinate</div>
+                                <div className={styles.cardTitle}>Grounding</div>
+                                <div className={styles.cardText}>LLMs can invent bugs that don't exist. The classifier decides first, so the LLM only explains real findings.</div>
                             </GlassCard>
                         </div>
                     </FadeUp>
@@ -324,19 +332,55 @@ export default function Dashboard() {
             <section id="architecture" className={`${styles.section} ${styles.sectionAlt}`}>
                 <div className={styles.container}>
                     <FadeUp><SectionLabel>System Architecture</SectionLabel></FadeUp>
-                    <FadeUp><SectionTitle sub="Student code flows through static analysis, CodeBERT classification, and LLM-powered educational explanations.">3-Layer Pipeline</SectionTitle></FadeUp>
+                    <FadeUp><SectionTitle sub="Code flows through static analysis → CodeBERT classification → LLM educational explanation.">3-Layer Pipeline</SectionTitle></FadeUp>
 
                     {/* Pipeline Diagram (hand-drawn) */}
                     <FadeUp>
-                        <div className={styles.diagramWrapper}>
-                            <img
-                                src="/pipeline_diagram.png"
-                                alt="3-Layer Pipeline Architecture Diagram"
-                                className={styles.diagramImg}
-                                onClick={() => setModalImg({ src: '/pipeline_diagram.png', alt: 'Pipeline Architecture' })}
-                            />
-                            <div className={styles.fcCaption}>Figure 1: End-to-end 3-layer pipeline architecture</div>
+                        <GlassCard>
+                        <div className={styles.flowchart}>
+                            <div className={`${styles.fcNode} ${styles.fcNodeGray}`}>Student Submits Code<div className={styles.fcNodeSub}>React + Monaco Editor</div></div>
+                            <div className={styles.fcArrow}>↓</div>
+                            <div className={`${styles.fcNode} ${styles.fcNodeGray}`}>Language Detection<div className={styles.fcNodeSub}>.py · .java · .cs</div></div>
+                            <div className={styles.fcArrow}>↓</div>
+                            <div className={`${styles.fcNode} ${styles.fcNodeGreen}`}>Flask API Orchestrator</div>
+                            <div className={styles.fcArrow}>↓</div>
+
+                            <div className={styles.fcParallel}>
+                                <div className={`${styles.fcLayerBox} ${styles.fcLayerOrange}`}>
+                                    <div className={styles.fcLayerLabel} style={{color: 'var(--dash-orange)'}}>Layer 1</div>
+                                    <div className={styles.fcLayerContent}>
+                                        <div className={`${styles.fcNode} ${styles.fcNodeOrange}`}>Bandit</div>
+                                        <div className={`${styles.fcNode} ${styles.fcNodeOrange}`}>Patterns</div>
+                                    </div>
+                                </div>
+                                <div className={`${styles.fcLayerBox} ${styles.fcLayerPurple}`}>
+                                    <div className={styles.fcLayerLabel} style={{color: 'var(--dash-purple)'}}>Layer 2</div>
+                                    <div className={`${styles.fcNode} ${styles.fcNodePurple}`}>CodeBERT<div className={styles.fcNodeSub}>Buggy / Clean</div></div>
+                                </div>
+                            </div>
+
+                            <div className={styles.fcArrow}>↓</div>
+                            <div className={`${styles.fcNode} ${styles.fcNodeBlue}`}>Verdict Combination</div>
+                            <div className={styles.fcArrow}>↓</div>
+
+                            <div className={styles.fcRow}>
+                                <div className={`${styles.fcNode} ${styles.fcNodeCyan}`}>Clean ✓<div className={styles.fcNodeSub}>Done</div></div>
+                                <div className={styles.fcLabel}>or buggy →</div>
+                                <div className={`${styles.fcLayerBox} ${styles.fcLayerGreen}`}>
+                                    <div className={styles.fcLayerLabel} style={{color: 'var(--dash-green)'}}>Layer 3</div>
+                                    <div className={styles.fcRow}>
+                                        <div className={`${styles.fcNode} ${styles.fcNodeGreen}`}>Qwen2.5-7B<div className={styles.fcNodeSub}>5-section prompt</div></div>
+                                        <div className={styles.fcLabel}>fails →</div>
+                                        <div className={`${styles.fcNode} ${styles.fcNodeRed}`}>Fallback</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={styles.fcArrow}>↓</div>
+                            <div className={`${styles.fcNode} ${styles.fcNodeBlue}`}>JSON → React Frontend<div className={styles.fcNodeSub}>Verdict + Confidence + Explanation</div></div>
                         </div>
+                        <div className={styles.fcCaption}>Figure 1 · End-to-end 3-layer pipeline architecture</div>
+                        </GlassCard>
                     </FadeUp>
 
                     {/* Detailed Layer Breakdown */}
@@ -345,12 +389,10 @@ export default function Dashboard() {
                             <div className={styles.flowSection}>
                                 <div className={`${styles.flowBadge} ${styles.flowBadgeOrange}`}>Layer 1</div>
                                 <div className={styles.flowContent}>
-                                    <h4>Static Analysis &amp; Baselines</h4>
-                                    <p>Rule-based and classical ML detection methods</p>
+                                    <h4>Static Analysis &amp; Rule-Based Detection</h4>
                                     <ul>
-                                        <li><strong>Bandit</strong> — Rule-based security scanner (Python only)</li>
-                                        <li><strong>Keyword Matching</strong> — String match for risky constructs (eval, exec, while True)</li>
-                                        <li><strong>TF-IDF + Logistic Regression</strong> — Classical ML baseline with GridSearch tuning</li>
+                                        <li><strong>Bandit</strong> — security scanner (Python only)</li>
+                                        <li><strong>Pattern detectors</strong> — regex + AST rules for Python, Java, C# (swapped operators, off-by-one, mutable defaults, resource leaks, etc.)</li>
                                     </ul>
                                 </div>
                             </div>
@@ -358,14 +400,13 @@ export default function Dashboard() {
                             <div className={styles.flowSection}>
                                 <div className={`${styles.flowBadge} ${styles.flowBadgePurple}`}>Layer 2</div>
                                 <div className={styles.flowContent}>
-                                    <h4>CodeBERT Bug Detection</h4>
-                                    <p>Fine-tuned transformer classifier (125M params)</p>
+                                    <h4>CodeBERT Semantic Classification</h4>
+                                    <p>Fine-tuned microsoft/codebert-base (125M params)</p>
                                     <ul>
-                                        <li><strong>Model:</strong> microsoft/codebert-base, Focal Loss (γ=2.0)</li>
-                                        <li><strong>Training:</strong> AdamW, lr=5e-6, cosine schedule, max 384 tokens</li>
-                                        <li><strong>Split:</strong> 70/15/15 by unique ID — no data leakage</li>
-                                        <li><strong>Threshold:</strong> Selected on validation set, frozen for test</li>
-                                        <li><strong>Support:</strong> Rule-based fallback for common structural mistakes</li>
+                                        <li><strong>Focal Loss</strong> (γ=2.0) · AdamW · cosine schedule · 384-token limit</li>
+                                        <li><strong>ID-based split</strong> (70/15/15) — no data leakage</li>
+                                        <li><strong>Threshold</strong> selected on validation, frozen for test</li>
+                                        <li><strong>Long files:</strong> AST chunking (Python) / regex extraction (Java, C#) + 3-tier confidence gating</li>
                                     </ul>
                                 </div>
                             </div>
@@ -374,13 +415,13 @@ export default function Dashboard() {
                                 <div className={`${styles.flowBadge} ${styles.flowBadgeGreen}`}>Layer 3</div>
                                 <div className={styles.flowContent}>
                                     <h4>LLM Educational Explainer</h4>
-                                    <p>Qwen2.5-Coder-7B-Instruct, 4-bit quantised — not fine-tuned</p>
+                                    <p>Qwen2.5-Coder-7B-Instruct · 4-bit NF4 · not fine-tuned</p>
                                     <ul>
-                                        <li><strong>Structured prompt</strong> enforces 5-section educational output</li>
-                                        <li><strong>Diff injection</strong> — real unified diff injected into Section 3</li>
-                                        <li><strong>Validation pipeline</strong> — format check + hallucinated diff detection</li>
-                                        <li><strong>Safe fallback</strong> — template used when LLM output fails checks</li>
+                                        <li><strong>5-section prompt</strong> — Goal, Bug, Fix, Mini-Lesson, Quick Check</li>
+                                        <li><strong>Format validation</strong> — enforces structure before returning</li>
+                                        <li><strong>Deterministic fallback</strong> — template used when GPU unavailable or output fails checks</li>
                                     </ul>
+                                    <p style={{fontSize: '0.8rem', opacity: 0.7, marginTop: '0.5rem'}}>Offline evaluation used real diff injection + hallucinated-diff detection over 1000 pairs.</p>
                                 </div>
                             </div>
                         </div>
@@ -392,11 +433,11 @@ export default function Dashboard() {
                             <div className={styles.cardTitle} style={{ marginBottom: '1rem' }}>Structured 5-Section Output Format</div>
                             <div className={styles.outputSections}>
                                 {[
-                                    { num: 1, color: '#3b82f6', title: 'Goal — What the code tries to do' },
-                                    { num: 2, color: '#ef4444', title: 'The Bug — Symptom, cause, misconception' },
-                                    { num: 3, color: '#10b981', title: 'The Fix — Real diff, why it works' },
-                                    { num: 4, color: '#8b5cf6', title: 'Mini-Lesson — Rule of thumb, example' },
-                                    { num: 5, color: '#06b6d4', title: 'Quick Check — One conceptual question' },
+                                    { num: 1, color: '#4a7cc9', title: 'Goal — What the code tries to do' },
+                                    { num: 2, color: '#c96161', title: 'The Bug — Symptom, cause, misconception' },
+                                    { num: 3, color: '#5ba88a', title: 'The Fix — Real diff, why it works' },
+                                    { num: 4, color: '#7b6cb5', title: 'Mini-Lesson — Rule of thumb, example' },
+                                    { num: 5, color: '#5b9ebd', title: 'Quick Check — One conceptual question' },
                                 ].map((s) => (
                                     <div key={s.num} className={styles.outputSection} style={{ borderLeftColor: s.color }}>
                                         <div className={styles.outputSectionLabel} style={{ color: s.color }}>Section {s.num}</div>
@@ -412,8 +453,8 @@ export default function Dashboard() {
             {/* ── WORKSTREAMS TABLE ── */}
             <section id="work" className={styles.section}>
                 <div className={styles.container}>
-                    <FadeUp><SectionLabel>Project Work</SectionLabel></FadeUp>
-                    <FadeUp><SectionTitle sub="Main workstreams, fixes, experiments, and deployment milestones.">What I Did Across the Project</SectionTitle></FadeUp>
+                    <FadeUp><SectionLabel>Implementation</SectionLabel></FadeUp>
+                    <FadeUp><SectionTitle>Project Workstreams</SectionTitle></FadeUp>
 
                     <FadeUp>
                         <div className={styles.tableWrapper}>
@@ -421,13 +462,13 @@ export default function Dashboard() {
                                 <thead><tr><th>Workstream</th><th>What I Did</th><th>Outcome</th></tr></thead>
                                 <tbody>
                                     {[
-                                        ['Datasets', 'Built Python (~930K), Java (~160K), and C# (~33K) datasets; cleaned duplicates; added synthetic bug types (16.7% of final data)', 'Multilingual training data'],
-                                        ['Leakage Fix', 'Changed from random row-split to ID-based split so paired bug/fix versions stay in same split', 'Honest evaluation'],
-                                        ['Model Work', 'Fine-tuned CodeBERT with Focal Loss, cosine schedule, macro-F1 threshold selection', 'Buggy / Clean classifier'],
-                                        ['Inference Fixes', 'Tried long-file chunking, AST decomposition, confidence gating, code-pattern support', 'Partial improvement only'],
-                                        ['LLM Work', 'Compared template, zero-shot, and structured grounded Qwen in 3-baseline experiment', 'Baseline 3 best'],
-                                        ['Deployment', 'Built React + Flask + Monaco Editor + TutorPanel web application', 'Full working system'],
-                                        ['Evaluation', 'Ran 1000-sample detection study, 1000-pair LLM study, 30-user survey, repeated tests', 'Final report evidence'],
+                                        ['Data', 'Python ~930K, Java ~160K, C# ~33K pairs; cleaned, deduplicated, synthetic bugs added', 'Multilingual corpora'],
+                                        ['Leakage Fix', 'Random split → ID-based 70/15/15 split (paired bug/fix stays together)', 'Honest evaluation'],
+                                        ['Training', 'Focal Loss, AdamW, cosine schedule, early stopping (patience 4), threshold on validation', 'Classifiers for 3 languages'],
+                                        ['Inference', 'AST chunking (Python), regex extraction (Java/C#), 3-tier confidence gating, pattern override', 'Robust real-time pipeline'],
+                                        ['LLM', '5-section prompt + validation + fallback; 3-baseline comparison', 'Structured grounded (B3) best'],
+                                        ['Web App', 'React + Flask + Monaco Editor + TutorPanel', 'Deployed system'],
+                                        ['Evaluation', '1000-sample detection, 1000-pair LLM study, 30-user survey (SUS)', 'Full evidence base'],
                                     ].map(([ws, did, outcome], i) => (
                                         <tr key={i}>
                                             <td className={styles.accentCell}>{ws}</td>
@@ -445,17 +486,50 @@ export default function Dashboard() {
                         <GlassCard style={{ marginTop: '2.5rem' }}>
                             <div className={styles.cardTitle}>Training Pipeline &amp; Data Flow</div>
                             <div className={styles.cardText} style={{ marginBottom: '1rem' }}>
-                                The full training pipeline from data collection through ID-based splitting to model evaluation.
+                                Data is deduplicated, normalised, and ID-split so paired buggy/fixed versions never leak across train/val/test.
                             </div>
-                            <div className={styles.diagramWrapper} style={{ border: 'none', padding: '0' }}>
-                                <img
-                                    src="/training_flowchart.png"
-                                    alt="Training Pipeline Flowchart"
-                                    className={styles.diagramImg}
-                                    onClick={() => setModalImg({ src: '/training_flowchart.png', alt: 'Training Pipeline Flowchart' })}
-                                />
-                                <div className={styles.fcCaption}>Figure 2: Training pipeline and data splitting strategy</div>
+                            <div className={styles.flowchart}>
+                                <div className={`${styles.fcNode} ${styles.fcNodeGreen}`}>Python (~930K), Java (~160K), C# (~33K)<div className={styles.fcNodeSub}>Raw datasets</div></div>
+                                <div className={styles.fcArrow}>↓</div>
+
+                                <div className={styles.fcRow}>
+                                    <div className={`${styles.fcNode} ${styles.fcNodeGray}`} style={{maxWidth: '160px'}}>Remove Identical<div className={styles.fcNodeSub}>buggy == fixed</div></div>
+                                    <div className={styles.fcRowArrow}>→</div>
+                                    <div className={`${styles.fcNode} ${styles.fcNodeGray}`} style={{maxWidth: '160px'}}>Length Filter<div className={styles.fcNodeSub}>Remove trivial / oversized</div></div>
+                                    <div className={styles.fcRowArrow}>→</div>
+                                    <div className={`${styles.fcNode} ${styles.fcNodeGray}`} style={{maxWidth: '160px'}}>MD5 Dedup<div className={styles.fcNodeSub}>Within &amp; across sources</div></div>
+                                    <div className={styles.fcRowArrow}>→</div>
+                                    <div className={`${styles.fcNode} ${styles.fcNodeGray}`} style={{maxWidth: '160px'}}>Source Pruning<div className={styles.fcNodeSub}>Remove noisy sources</div></div>
+                                </div>
+
+                                <div className={styles.fcArrow}>↓</div>
+
+                                <div className={styles.fcRow} style={{gap: '2rem'}}>
+                                    <div className={`${styles.fcNode} ${styles.fcNodeOrange}`}>ID-Based Train / Val / Test Split<div className={styles.fcNodeSub}>70 / 15 / 15</div></div>
+                                    <div className={`${styles.fcNode} ${styles.fcNodeRed}`} style={{maxWidth: '220px'}}>⚠ Data Leakage Risk<div className={styles.fcNodeSub}>Random split = buggy in train, fixed in test</div></div>
+                                </div>
+
+                                <div className={styles.fcArrow}>↓</div>
+                                <div className={`${styles.fcNode} ${styles.fcNodeGray}`}>BPE Tokenisation<div className={styles.fcNodeSub}>RoBERTa tokenizer · 384 tokens</div></div>
+                                <div className={styles.fcArrow}>↓</div>
+
+                                <div className={styles.fcRow}>
+                                    <div className={`${styles.fcNode} ${styles.fcNodePurple}`}>CodeBERT Fine-Tuning<div className={styles.fcNodeSub}>Focal Loss · AdamW · Cosine</div></div>
+                                    <div className={styles.fcRowArrow}>→</div>
+                                    <div className={`${styles.fcNode} ${styles.fcNodeBlue}`}>3 Trained Models<div className={styles.fcNodeSub}>Python · Java · C#</div></div>
+                                </div>
+
+                                <div className={styles.fcArrow}>↓</div>
+
+                                <div className={styles.fcRow}>
+                                    <div className={`${styles.fcNode} ${styles.fcNodeCyan}`}>Threshold on Validation<div className={styles.fcNodeSub}>Optimise Macro-F1</div></div>
+                                    <div className={styles.fcRowArrow}>→</div>
+                                    <div className={`${styles.fcNode} ${styles.fcNodeCyan}`}>Test Evaluation<div className={styles.fcNodeSub}>Threshold frozen</div></div>
+                                    <div className={styles.fcRowArrow}>→</div>
+                                    <div className={`${styles.fcNode} ${styles.fcNodeGreen}`}>Deployed in Pipeline<div className={styles.fcNodeSub}>Frozen model + threshold</div></div>
+                                </div>
                             </div>
+                            <div className={styles.fcCaption}>Figure 2: Training pipeline and data splitting strategy</div>
                         </GlassCard>
                     </FadeUp>
 
@@ -467,9 +541,9 @@ export default function Dashboard() {
                                 <table>
                                     <thead><tr><th>Language</th><th>Total Size</th><th>Sources</th><th>Notes</th></tr></thead>
                                     <tbody>
-                                        <tr><td className={styles.accentCell}>Python</td><td>~930K</td><td>CTSSB ~739K, Synthetic ~183K, CTSSB Aug ~7K, PyVul ~1.5K</td><td>~20% synthetic data</td></tr>
-                                        <tr><td className={styles.accentCell}>Java</td><td>~160K</td><td>ManySStuBs4J, CodeXGLUE Bugs2Fix, Vul4J, HuggingFace</td><td>Multiple bug-fix sources</td></tr>
-                                        <tr><td className={styles.accentCell}>C#</td><td>~33K</td><td>InferredBugs, SARD Juliet NIST, GitHub-mined, Synthetic</td><td>Smallest but highest quality</td></tr>
+                                        <tr><td className={styles.accentCell}>Python</td><td>~930K</td><td>CTSSB, Synthetic (20+ bug types), PyVul</td><td>16.7% synthetic</td></tr>
+                                        <tr><td className={styles.accentCell}>Java</td><td>~160K</td><td>ManySStuBs4J, CodeXGLUE, Vul4J</td><td>Real-world bug-fix repos</td></tr>
+                                        <tr><td className={styles.accentCell}>C#</td><td>~33K</td><td>InferredBugs, SARD Juliet, GitHub-mined</td><td>Smallest but highest quality</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -482,7 +556,7 @@ export default function Dashboard() {
             <section id="results" className={`${styles.section} ${styles.sectionAlt}`}>
                 <div className={styles.container}>
                     <FadeUp><SectionLabel>Experiments &amp; Results</SectionLabel></FadeUp>
-                    <FadeUp><SectionTitle sub="Fine-tuning was essential — pre-trained CodeBERT performed at or below chance level.">Pre-trained vs Fine-tuned CodeBERT</SectionTitle></FadeUp>
+                    <FadeUp><SectionTitle sub="Pre-trained CodeBERT scored at chance level (~50%) — fine-tuning was essential.">Pre-trained vs Fine-tuned CodeBERT</SectionTitle></FadeUp>
 
                     <FadeUp>
                         <div className={styles.cardGrid2}>
@@ -504,7 +578,7 @@ export default function Dashboard() {
                                 </div>
                                 <div className={styles.chartLegend}>
                                     <span><span className={styles.legendDot} style={{ background: 'rgba(100,116,139,0.4)' }} /> Pre-trained</span>
-                                    <span><span className={styles.legendDot} style={{ background: '#3b82f6' }} /> Fine-tuned</span>
+                                    <span><span className={styles.legendDot} style={{ background: '#4a7cc9' }} /> Fine-tuned</span>
                                 </div>
                             </GlassCard>
 
@@ -537,7 +611,7 @@ export default function Dashboard() {
 
                     <FadeUp>
                         <div className={`${styles.callout} ${styles.calloutGreen}`}>
-                            <strong>Key Finding:</strong> C# improved the most (+32% accuracy) with the smallest dataset (~33K). Dataset quality &gt; dataset quantity. Java reached near-Python F1 with 6× less data.
+                            <strong>Key Finding:</strong> C# gained +32% accuracy with the smallest dataset (~33K). Data quality &gt; quantity. Java matched Python's F1 with 6× less data.
                         </div>
                     </FadeUp>
 
@@ -558,8 +632,8 @@ export default function Dashboard() {
 
                     {/* Baseline Comparison */}
                     <FadeUp>
-                        <h3 className={styles.subTitle} style={{ marginTop: '2.5rem' }}>1000-Sample Baseline Comparison</h3>
-                        <p className={styles.sectionSub}>Evaluated on 1000 balanced Python samples (500 buggy, 500 clean) from the held-out test split.</p>
+                        <h3 className={styles.subTitle} style={{ marginTop: '2.5rem' }}>1000-Sample Detection Study</h3>
+                        <p className={styles.sectionSub}>1000 balanced Python samples (500 buggy + 500 clean) from the held-out test split.</p>
                         <div className={styles.tableWrapper}>
                             <table>
                                 <thead><tr><th>Method</th><th>Accuracy</th><th>Macro-F1</th><th>Buggy Recall</th><th>Clean Recall</th></tr></thead>
@@ -635,8 +709,8 @@ export default function Dashboard() {
             {/* ── LLM EXPERIMENT & USER STUDY ── */}
             <section id="llm" className={styles.section}>
                 <div className={styles.container}>
-                    <FadeUp><SectionLabel>LLM Experiment &amp; User Study</SectionLabel></FadeUp>
-                    <FadeUp><SectionTitle sub="Structured prompting and grounding made the explainer reliable.">Explanation Quality &amp; User Evaluation</SectionTitle></FadeUp>
+                    <FadeUp><SectionLabel>LLM Evaluation &amp; User Study</SectionLabel></FadeUp>
+                    <FadeUp><SectionTitle sub="3-baseline comparison over 1000 buggy–fixed pairs + 30-participant user survey.">Explanation Quality &amp; User Evaluation</SectionTitle></FadeUp>
 
                     {/* LLM Baselines & Survey Report Figures */}
                     <FadeUp>
@@ -674,27 +748,27 @@ export default function Dashboard() {
 
                     <FadeUp>
                         <div className={`${styles.callout} ${styles.calloutPurple}`}>
-                            <strong>Key LLM Result:</strong> The improvement came from design — structured prompting, real diff injection, validation, and safe fallback — not model size. 89.3% LLM-generated, 10.7% safe fallback.
+                            <strong>Key LLM Finding:</strong> Improvement came from prompt design, not model size. 89.3% LLM-generated, 10.7% safe fallback.
                         </div>
                     </FadeUp>
 
                     {/* User Evaluation */}
                     <FadeUp>
-                        <h3 className={styles.subTitle} style={{ marginTop: '3rem' }}>User Evaluation Survey</h3>
+                        <h3 className={styles.subTitle} style={{ marginTop: '3rem' }}>User Evaluation (n=30)</h3>
                         <div className={styles.compGrid}>
                             <GlassCard className={styles.compCard}>
-                                <div className={styles.compLabel} style={{ color: '#3b82f6' }}>SUS Score</div>
+                                <div className={styles.compLabel} style={{ color: '#4a7cc9' }}>SUS Score</div>
                                 <div className={styles.compVal}><span className={styles.gradient}>71.8</span></div>
                                 <div className={styles.compSub}>"Good" band (avg = 68)</div>
                             </GlassCard>
                             <GlassCard className={styles.compCard}>
-                                <div className={styles.compLabel} style={{ color: '#10b981' }}>Tutor Helpfulness</div>
-                                <div className={styles.compVal} style={{ color: '#10b981' }}>4.04<span className={styles.compUnit}>/5</span></div>
+                                <div className={styles.compLabel} style={{ color: '#5ba88a' }}>Tutor Helpfulness</div>
+                                <div className={styles.compVal} style={{ color: '#5ba88a' }}>4.04<span className={styles.compUnit}>/5</span></div>
                                 <div className={styles.compSub}>Clarity: 3.96/5</div>
                             </GlassCard>
                             <GlassCard className={styles.compCard}>
-                                <div className={styles.compLabel} style={{ color: '#8b5cf6' }}>Would Use Again</div>
-                                <div className={styles.compVal} style={{ color: '#8b5cf6' }}>22<span className={styles.compUnit}>/30</span></div>
+                                <div className={styles.compLabel} style={{ color: '#7b6cb5' }}>Would Use Again</div>
+                                <div className={styles.compVal} style={{ color: '#7b6cb5' }}>22<span className={styles.compUnit}>/30</span></div>
                                 <div className={styles.compSub}>Overall rating: 3.92/5</div>
                             </GlassCard>
                         </div>
@@ -706,9 +780,10 @@ export default function Dashboard() {
                                 <thead><tr><th>Metric</th><th>Result</th></tr></thead>
                                 <tbody>
                                     <tr><td>Participants</td><td>30 (undergrad, postgrad, professionals)</td></tr>
-                                    <tr><td>Detection Accuracy Perception</td><td>19/30 accurate most of the time</td></tr>
+                                    <tr><td>Accurate Most of the Time</td><td>19/30</td></tr>
                                     <tr><td>Valuable Learning Aid</td><td>19/30</td></tr>
-                                    <tr><td>Top Requested Improvement</td><td>Explanation quality (16/30)</td></tr>
+                                    <tr><td>Would Use Again</td><td>22/30</td></tr>
+                                    <tr><td>Top Improvement Request</td><td>Explanation quality (16/30)</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -729,11 +804,11 @@ export default function Dashboard() {
                                 <div className={styles.cardTitle}>Main Limitations</div>
                                 <div className={styles.cardText}>
                                     <ul>
-                                        <li>Long files remained difficult (512 token limit)</li>
-                                        <li>Subtle logic bugs still challenging</li>
-                                        <li>LLM requires GPU for real inference</li>
-                                        <li>Overconfident false negatives (90%+ wrong)</li>
-                                        <li>Single-file analysis only</li>
+                                        <li>384-token limit — long files lose cross-function context</li>
+                                        <li>Single-file only — no cross-file reasoning</li>
+                                        <li>LLM needs GPU; falls back to templates without one</li>
+                                        <li>Overconfident false negatives (90%+ wrong sometimes)</li>
+                                        <li>30-participant convenience sample only</li>
                                     </ul>
                                 </div>
                             </GlassCard>
@@ -742,11 +817,11 @@ export default function Dashboard() {
                                 <div className={styles.cardTitle}>What Helped</div>
                                 <div className={styles.cardText}>
                                     <ul>
-                                        <li>ID-based splitting fixed leakage</li>
-                                        <li>Better data &gt; more data</li>
+                                        <li>ID-based splitting fixed data leakage</li>
+                                        <li>Quality &gt; quantity (C# best with smallest data)</li>
                                         <li>Focal Loss for hard examples</li>
-                                        <li>Code-pattern fallback support</li>
-                                        <li>Structured prompt grounding</li>
+                                        <li>Pattern detectors override false negatives</li>
+                                        <li>Structured prompting = no hallucinations</li>
                                     </ul>
                                 </div>
                             </GlassCard>
@@ -755,10 +830,10 @@ export default function Dashboard() {
                                 <div className={styles.cardTitle}>Future Work</div>
                                 <div className={styles.cardText}>
                                     <ul>
-                                        <li>Token-level bug localisation (GNN)</li>
+                                        <li>More languages (Haskell, Rust, Go)</li>
                                         <li>Longer-context models (LongCoder)</li>
-                                        <li>Cross-file analysis</li>
-                                        <li>Fine-tuned educational explainer</li>
+                                        <li>Cross-file reasoning</li>
+                                        <li>Controlled classroom study with pre/post tests</li>
                                     </ul>
                                 </div>
                             </GlassCard>
@@ -770,16 +845,16 @@ export default function Dashboard() {
                         <GlassCard style={{ marginTop: '2.5rem', textAlign: 'center', padding: '3rem 2rem' }}>
                             <div className={styles.cardTitle} style={{ fontSize: '1.3rem', marginBottom: '1.5rem' }}>Final Takeaways</div>
                             <div className={styles.takeawayGrid}>
-                                <div className={styles.takeaway} style={{ borderLeftColor: '#3b82f6' }}>
-                                    <div className={styles.takeawayLabel} style={{ color: '#3b82f6' }}>Takeaway 1</div>
-                                    <div>Built a full 3-layer educational code review system deployed as a web app.</div>
+                                <div className={styles.takeaway} style={{ borderLeftColor: '#4a7cc9' }}>
+                                    <div className={styles.takeawayLabel} style={{ color: '#4a7cc9' }}>Takeaway 1</div>
+                                    <div>Built and deployed a full 3-layer educational code review system as a web app.</div>
                                 </div>
-                                <div className={styles.takeaway} style={{ borderLeftColor: '#8b5cf6' }}>
-                                    <div className={styles.takeawayLabel} style={{ color: '#8b5cf6' }}>Takeaway 2</div>
-                                    <div>CodeBERT outperformed static and classical ML baselines under strict evaluation.</div>
+                                <div className={styles.takeaway} style={{ borderLeftColor: '#7b6cb5' }}>
+                                    <div className={styles.takeawayLabel} style={{ color: '#7b6cb5' }}>Takeaway 2</div>
+                                    <div>CodeBERT outperformed all baselines on all three languages under strict evaluation.</div>
                                 </div>
-                                <div className={styles.takeaway} style={{ borderLeftColor: '#10b981' }}>
-                                    <div className={styles.takeawayLabel} style={{ color: '#10b981' }}>Takeaway 3</div>
+                                <div className={styles.takeaway} style={{ borderLeftColor: '#5ba88a' }}>
+                                    <div className={styles.takeawayLabel} style={{ color: '#5ba88a' }}>Takeaway 3</div>
                                     <div>Rigorous data handling was as important as model choice.</div>
                                 </div>
                             </div>
@@ -790,7 +865,7 @@ export default function Dashboard() {
 
             {/* ── FOOTER ── */}
             <footer className={styles.dashFooter}>
-                <div className={styles.footerQuote}>"The classifier decides what is wrong, and the LLM explains why."</div>
+                <div className={styles.footerQuote}>"The classifier decides what is wrong; the LLM explains why."</div>
                 <p>AI-Powered Educational Code Analyzer · Yousef Al Dali · Computer Science FYP 2026</p>
             </footer>
 

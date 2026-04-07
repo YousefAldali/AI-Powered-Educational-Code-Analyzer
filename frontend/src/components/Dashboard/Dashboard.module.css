@@ -7,26 +7,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 .dashboard {
-    --dash-bg:         #0a0e1a;
-    --dash-bg-alt:     #111827;
-    --dash-glass:      rgba(255,255,255,0.03);
-    --dash-border:     rgba(255,255,255,0.08);
-    --dash-text:       #f1f5f9;
-    --dash-text-sec:   #94a3b8;
-    --dash-text-muted: #64748b;
-    --dash-blue:       #3b82f6;
-    --dash-purple:     #8b5cf6;
-    --dash-cyan:       #06b6d4;
-    --dash-green:      #10b981;
-    --dash-orange:     #f59e0b;
-    --dash-red:        #ef4444;
-    --dash-pink:       #ec4899;
-    --dash-grad:       linear-gradient(135deg, #3b82f6, #8b5cf6);
-    --dash-grad-cyan:  linear-gradient(135deg, #06b6d4, #3b82f6);
-    --dash-grad-green: linear-gradient(135deg, #10b981, #06b6d4);
-    --dash-shadow:     0 25px 50px -12px rgba(0,0,0,0.5);
+    --dash-bg:         #0c1222;
+    --dash-bg-alt:     #111d32;
+    --dash-glass:      rgba(255,255,255,0.025);
+    --dash-border:     rgba(255,255,255,0.07);
+    --dash-text:       #dce4f0;
+    --dash-text-sec:   #8a9bb8;
+    --dash-text-muted: #5a6d8a;
+    --dash-blue:       #4a7cc9;
+    --dash-purple:     #7b6cb5;
+    --dash-cyan:       #5b9ebd;
+    --dash-green:      #5ba88a;
+    --dash-orange:     #c9915a;
+    --dash-red:        #c96161;
+    --dash-pink:       #c97a8a;
+    --dash-grad:       linear-gradient(135deg, #4a7cc9, #c96161);
+    --dash-grad-cyan:  linear-gradient(135deg, #5b9ebd, #4a7cc9);
+    --dash-grad-green: linear-gradient(135deg, #5ba88a, #5b9ebd);
+    --dash-shadow:     0 25px 50px -12px rgba(0,0,0,0.4);
     --dash-radius:     16px;
     --dash-radius-sm:  10px;
+    --dash-card-bg:    rgba(17,29,50,0.7);
 
     background: var(--dash-bg);
     color: var(--dash-text);
@@ -34,6 +35,57 @@
     line-height: 1.7;
     overflow-x: hidden;
     min-height: 100vh;
+    transition: background 0.4s ease, color 0.4s ease;
+}
+
+/* ── Light Mode ── */
+.dashboardLight {
+    --dash-bg:         #e8e0d8;
+    --dash-bg-alt:     #dfd6cc;
+    --dash-glass:      rgba(0,0,0,0.02);
+    --dash-border:     rgba(60,50,40,0.12);
+    --dash-text:       #2a2035;
+    --dash-text-sec:   #554a60;
+    --dash-text-muted: #7a7085;
+    --dash-blue:       #3b6098;
+    --dash-purple:     #5e4f8a;
+    --dash-cyan:       #3a6e82;
+    --dash-green:      #3a7058;
+    --dash-orange:     #8a6535;
+    --dash-red:        #904545;
+    --dash-pink:       #845060;
+    --dash-grad:       linear-gradient(135deg, #3b6098, #904545);
+    --dash-grad-cyan:  linear-gradient(135deg, #3a6e82, #3b6098);
+    --dash-grad-green: linear-gradient(135deg, #3a7058, #3a6e82);
+    --dash-shadow:     0 15px 40px -10px rgba(40,30,20,0.12);
+    --dash-card-bg:    rgba(255,252,248,0.55);
+}
+
+/* ── Theme Toggle ── */
+.themeToggle {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 950;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--dash-border);
+    background: var(--dash-card-bg);
+    backdrop-filter: blur(12px);
+    color: var(--dash-text);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+.themeToggle:hover {
+    transform: scale(1.1);
+    border-color: var(--dash-blue);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
 }
 
 /* ── Container ── */
@@ -113,8 +165,8 @@
     top: -50%; left: -50%;
     width: 200%; height: 200%;
     background:
-        radial-gradient(circle at 30% 40%, rgba(59,130,246,0.08) 0%, transparent 50%),
-        radial-gradient(circle at 70% 60%, rgba(139,92,246,0.06) 0%, transparent 50%);
+        radial-gradient(circle at 30% 40%, rgba(74,124,201,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 70% 60%, rgba(123,108,181,0.06) 0%, transparent 50%);
     animation: heroBgAnim 20s ease infinite alternate;
     pointer-events: none;
 }
@@ -172,7 +224,7 @@
     transition: all 0.3s;
 }
 .statCard:hover {
-    border-color: rgba(59,130,246,0.3);
+    border-color: rgba(74,124,201,0.3);
     transform: translateY(-2px);
 }
 .statValue {
@@ -193,7 +245,7 @@
    GLASS CARDS
    ══════════════════════════════════════════ */
 .glassCard {
-    background: rgba(17,24,39,0.7);
+    background: var(--dash-card-bg);
     border: 1px solid var(--dash-border);
     border-radius: var(--dash-radius);
     padding: 2rem;
@@ -201,7 +253,7 @@
     transition: all 0.3s;
 }
 .glassCard:hover {
-    border-color: rgba(59,130,246,0.2);
+    border-color: rgba(74,124,201,0.2);
 }
 .centeredCard { text-align: center; }
 
@@ -228,12 +280,12 @@
     margin-bottom: 1rem;
 }
 .cardIconCentered { margin: 0 auto 1rem; }
-.cardIconBlue   { background: rgba(59,130,246,0.15);  color: var(--dash-blue); }
-.cardIconPurple { background: rgba(139,92,246,0.15);  color: var(--dash-purple); }
-.cardIconCyan   { background: rgba(6,182,212,0.15);   color: var(--dash-cyan); }
-.cardIconGreen  { background: rgba(16,185,129,0.15);  color: var(--dash-green); }
-.cardIconOrange { background: rgba(245,158,11,0.15);  color: var(--dash-orange); }
-.cardIconPink   { background: rgba(236,72,153,0.15);  color: var(--dash-pink); }
+.cardIconBlue   { background: rgba(74,124,201,0.15);  color: var(--dash-blue); }
+.cardIconPurple { background: rgba(123,108,181,0.15);  color: var(--dash-purple); }
+.cardIconCyan   { background: rgba(91,158,189,0.15);   color: var(--dash-cyan); }
+.cardIconGreen  { background: rgba(91,168,138,0.15);  color: var(--dash-green); }
+.cardIconOrange { background: rgba(201,145,90,0.15);  color: var(--dash-orange); }
+.cardIconPink   { background: rgba(201,122,138,0.15);  color: var(--dash-pink); }
 
 .cardTitle {
     font-size: 1.1rem;
@@ -282,7 +334,7 @@
     border: 1px solid var(--dash-border);
 }
 .tableWrapper table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-.tableWrapper thead { background: rgba(59,130,246,0.08); }
+.tableWrapper thead { background: rgba(74,124,201,0.08); }
 .tableWrapper th {
     padding: 0.9rem 1.2rem;
     text-align: left;
@@ -304,7 +356,7 @@
 }
 .highlightCell { color: var(--dash-green) !important; font-weight: 600; }
 .accentCell    { color: var(--dash-blue) !important; font-weight: 600; }
-.highlightRow  { background: rgba(59,130,246,0.06); }
+.highlightRow  { background: rgba(74,124,201,0.06); }
 
 /* ══════════════════════════════════════════
    FLOWCHARTS (SVG)
@@ -318,7 +370,7 @@
     overflow-x: auto;
     transition: border-color 0.3s;
 }
-.fcWrapper:hover { border-color: rgba(59,130,246,0.2); }
+.fcWrapper:hover { border-color: rgba(74,124,201,0.2); }
 .fcSvg { width: 100%; height: auto; display: block; }
 .fcCaption {
     text-align: center;
@@ -342,7 +394,7 @@
     align-items: start;
     transition: border-color 0.3s;
 }
-.flowSection:hover { border-color: rgba(59,130,246,0.2); }
+.flowSection:hover { border-color: rgba(74,124,201,0.2); }
 .flowBadge {
     font-size: 0.7rem;
     font-weight: 700;
@@ -352,9 +404,9 @@
     text-align: center;
     border-radius: var(--dash-radius-sm);
 }
-.flowBadgeOrange { background: rgba(245,158,11,0.12); color: var(--dash-orange); }
-.flowBadgePurple { background: rgba(139,92,246,0.12); color: var(--dash-purple); }
-.flowBadgeGreen  { background: rgba(16,185,129,0.12); color: var(--dash-green); }
+.flowBadgeOrange { background: rgba(201,145,90,0.12); color: var(--dash-orange); }
+.flowBadgePurple { background: rgba(123,108,181,0.12); color: var(--dash-purple); }
+.flowBadgeGreen  { background: rgba(91,168,138,0.12); color: var(--dash-green); }
 
 .flowContent h4 { font-weight: 600; margin-bottom: 0.4rem; }
 .flowContent p { font-size: 0.85rem; color: var(--dash-text-sec); }
@@ -380,32 +432,116 @@
     padding: 0.15rem 0;
 }
 
-/* ── Hand-drawn diagram images ── */
-.diagramWrapper {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: var(--dash-radius);
-    padding: 1.25rem;
-    margin-bottom: 2rem;
-    overflow: hidden;
-    transition: border-color 0.35s, box-shadow 0.35s;
+/* ── Native Flowchart Components ── */
+.flowchart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 1rem 0;
 }
-.diagramWrapper:hover {
-    border-color: rgba(59,130,246,0.2);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+.fcNode {
+    padding: 0.45rem 1rem;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid;
+    max-width: 220px;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
-.diagramImg {
-    width: 100%;
-    height: auto;
-    display: block;
+.fcNode:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.fcNodeSub {
+    font-weight: 400;
+    font-size: 0.65rem;
+    opacity: 0.7;
+    margin-top: 0.1rem;
+}
+.fcNodeBlue   { background: rgba(74,124,201,0.12);  border-color: rgba(74,124,201,0.3);  color: var(--dash-text); }
+.fcNodeGreen  { background: rgba(91,168,138,0.12);  border-color: rgba(91,168,138,0.3);  color: var(--dash-text); }
+.fcNodePurple { background: rgba(123,108,181,0.12);  border-color: rgba(123,108,181,0.3);  color: var(--dash-text); }
+.fcNodeOrange { background: rgba(201,145,90,0.12);  border-color: rgba(201,145,90,0.3);  color: var(--dash-text); }
+.fcNodeCyan   { background: rgba(91,158,189,0.12);   border-color: rgba(91,158,189,0.3);   color: var(--dash-text); }
+.fcNodeRed    { background: rgba(201,97,97,0.08);   border-color: rgba(201,97,97,0.35);  color: var(--dash-red); border-style: dashed; }
+.fcNodeGray   { background: rgba(90,109,138,0.1);  border-color: rgba(90,109,138,0.3); color: var(--dash-text-sec); }
+
+.fcDiamond {
+    width: 60px; height: 60px;
+    background: rgba(201,145,90,0.15);
+    border: 1px solid rgba(201,145,90,0.4);
+    transform: rotate(45deg);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+}
+.fcDiamond span {
+    transform: rotate(-45deg);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--dash-orange);
+}
+
+.fcArrow {
+    color: var(--dash-text-muted);
+    font-size: 0.85rem;
+    padding: 0.05rem 0;
+    line-height: 1;
+}
+.fcLabel {
+    font-size: 0.68rem;
+    color: var(--dash-text-muted);
+    letter-spacing: 0.5px;
+}
+
+/* Flowchart rows for horizontal layouts */
+.fcRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.fcRowArrow {
+    color: var(--dash-text-muted);
+    font-size: 1rem;
+}
+
+/* Layer group boxes */
+.fcLayerBox {
+    border: 1px dashed;
     border-radius: 10px;
-    background: #ffffff;
-    cursor: pointer;
-    transition: transform 0.3s;
-    padding: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
 }
-.diagramImg:hover {
-    transform: scale(1.015);
+.fcLayerLabel {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 0.1rem;
+}
+.fcLayerOrange { border-color: rgba(201,145,90,0.3); }
+.fcLayerPurple { border-color: rgba(123,108,181,0.3); }
+.fcLayerGreen  { border-color: rgba(91,168,138,0.3); }
+
+.fcLayerContent {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Side-by-side layer boxes */
+.fcParallel {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 /* ── 5-section output format ── */
@@ -467,7 +603,7 @@
     color: #fff;
     width: 0;
 }
-.barFill_gray  { background: rgba(100,116,139,0.4); color: var(--dash-text-sec); }
+.barFill_gray  { background: rgba(90,109,138,0.4); color: var(--dash-text-sec); }
 .barFill_blue  { background: var(--dash-grad); }
 .barFill_green { background: var(--dash-grad-green); }
 
@@ -500,11 +636,11 @@
     font-size: 0.72rem;
     font-weight: 600;
 }
-.tag_green  { background: rgba(16,185,129,0.15); color: var(--dash-green); }
-.tag_red    { background: rgba(239,68,68,0.15);  color: var(--dash-red); }
-.tag_blue   { background: rgba(59,130,246,0.15); color: var(--dash-blue); }
-.tag_purple { background: rgba(139,92,246,0.15); color: var(--dash-purple); }
-.tag_orange { background: rgba(245,158,11,0.15); color: var(--dash-orange); }
+.tag_green  { background: rgba(91,168,138,0.15); color: var(--dash-green); }
+.tag_red    { background: rgba(201,97,97,0.15);  color: var(--dash-red); }
+.tag_blue   { background: rgba(74,124,201,0.15); color: var(--dash-blue); }
+.tag_purple { background: rgba(123,108,181,0.15); color: var(--dash-purple); }
+.tag_orange { background: rgba(201,145,90,0.15); color: var(--dash-orange); }
 
 /* ══════════════════════════════════════════
    COMPARISON CARDS (SUS, helpfulness…)
@@ -555,7 +691,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 .plotCard:hover {
-    border-color: rgba(59,130,246,0.25);
+    border-color: rgba(74,124,201,0.25);
     transform: translateY(-4px);
     box-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
@@ -575,7 +711,7 @@
     font-weight: 600;
     color: var(--dash-text-sec);
     text-align: center;
-    background: rgba(15, 23, 42, 0.95);
+    background: var(--dash-card-bg);
     border-top: 1px solid var(--dash-border);
     letter-spacing: 0.02em;
 }
@@ -696,7 +832,7 @@
     height: 48px;
     border-radius: 50%;
     border: 1px solid var(--dash-border);
-    background: rgba(15, 23, 42, 0.9);
+    background: var(--dash-card-bg);
     backdrop-filter: blur(10px);
     color: var(--dash-text);
     font-size: 1.3rem;
@@ -728,7 +864,7 @@
     flex-direction: column;
     gap: 0.2rem;
     padding: 0.75rem 0.5rem;
-    background: rgba(15, 23, 42, 0.8);
+    background: var(--dash-card-bg);
     backdrop-filter: blur(12px);
     border: 1px solid var(--dash-border);
     border-radius: 12px;

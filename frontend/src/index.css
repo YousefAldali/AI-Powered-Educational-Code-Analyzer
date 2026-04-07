@@ -7,23 +7,23 @@
 }
 
 :root {
-  --bg-void:       #020617;
-  --bg-surface:    #0b1120;
-  --bg-panel:      #0f172a;
-  --bg-elevated:   #1e293b;
+  --bg-void:       #0c1222;
+  --bg-surface:    #0f1a2e;
+  --bg-panel:      #111d32;
+  --bg-elevated:   #1a2940;
   --border:        #1e3352;
   --border-bright: #2d4a6e;
-  --accent:        #38bdf8;
-  --accent-dim:    #0ea5e9;
-  --accent-glow:   rgba(56, 189, 248, 0.15);
-  --green:         #4ade80;
-  --green-glow:    rgba(74, 222, 128, 0.12);
-  --red:           #f87171;
-  --red-glow:      rgba(248, 113, 113, 0.12);
-  --amber:         #fbbf24;
-  --text-primary:  #e2e8f0;
-  --text-secondary:#94a3b8;
-  --text-muted:    #475569;
+  --accent:        #4a7cc9;
+  --accent-dim:    #3a6ab5;
+  --accent-glow:   rgba(74, 124, 201, 0.15);
+  --green:         #5ba88a;
+  --green-glow:    rgba(91, 168, 138, 0.12);
+  --red:           #c96161;
+  --red-glow:      rgba(201, 97, 97, 0.12);
+  --amber:         #c9915a;
+  --text-primary:  #dce4f0;
+  --text-secondary:#8a9bb8;
+  --text-muted:    #5a6d8a;
   --mono:          'Space Mono', monospace;
   --sans:          'DM Sans', sans-serif;
 }
@@ -106,16 +106,16 @@ html, body, #root {
 
 /* Monaco editor error line decorations (must be global) */
 .error-line-highlight {
-  background: rgba(248, 113, 113, 0.12) !important;
-  border-left: 3px solid #f87171 !important;
+  background: rgba(201, 97, 97, 0.12) !important;
+  border-left: 3px solid #c96161 !important;
 }
 
 .error-glyph-margin {
-  background: #f87171;
+  background: #c96161;
   border-radius: 50%;
   width: 8px !important;
   height: 8px !important;
   margin-left: 4px;
   margin-top: 6px;
-  box-shadow: 0 0 6px rgba(248, 113, 113, 0.5);
+  box-shadow: 0 0 6px rgba(201, 97, 97, 0.5);
 }
