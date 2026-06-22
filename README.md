@@ -83,8 +83,8 @@ yxa342/
 ### 1. Clone the Repository
 
 ```bash
-git clone git@git.cs.bham.ac.uk:projects-2025-26/yxa342.git
-cd yxa342
+git clone git@github.com:YousefAldali/AI-Powered-Educational-Code-Analyzer.git
+cd AI-Powered-Educational-Code-Analyzer
 ```
 
 ### 2. Backend Setup
