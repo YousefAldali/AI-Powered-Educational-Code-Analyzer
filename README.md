@@ -53,9 +53,7 @@ yxa342/
 │   ├── data/                           # LLM experiment data
 │   └── outputs/                        # Generated explanations
 │
-├── README.md                           # Project overview (this file)
-├── WEEKLY_REPORT.md                    # Weekly progress reports
-└── Final Year Project Proposal.pdf     # Original project proposal
+└── README.md                           # Project overview (this file)
 ```
 
 ---
@@ -124,8 +122,3 @@ The frontend will run at `http://localhost:5173`.
 **Yousef Aldali** — 2720540
 **Supervisor:** Dr. Abhirup Ghosh
 
----
-
-## Documentation
-
-- **[View Weekly Progress Report](./WEEKLY_REPORT.md)**
