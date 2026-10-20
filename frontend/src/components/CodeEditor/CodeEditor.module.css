@@ -1,73 +1,8 @@
 .wrapper {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    background: var(--bg-void);
-    transition: border-color 0.2s;
-}
-
-.wrapper:focus-within {
-    border-color: var(--border-bright);
-    box-shadow: 0 0 0 1px var(--accent-glow);
-}
-
-.header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 14px;
-    background: var(--bg-surface);
-    border-bottom: 1px solid var(--border);
-}
-
-.dots {
-    display: flex;
-    gap: 6px;
-}
-
-.dots span {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--border-bright);
-}
-
-.dots span:nth-child(1) {
-    background: #f87171;
-}
-
-.dots span:nth-child(2) {
-    background: #fbbf24;
-}
-
-.dots span:nth-child(3) {
-    background: #4ade80;
-}
-
-.langBadge {
-    font-family: var(--mono);
-    font-size: 0.7em;
-    letter-spacing: 0.1em;
-    color: var(--accent);
-    background: var(--accent-glow);
-    border: 1px solid var(--accent-dim);
-    padding: 2px 8px;
-    border-radius: 4px;
-}
-
-.errorBadge {
-    font-family: var(--mono);
-    font-size: 0.65em;
-    letter-spacing: 0.06em;
-    color: #f87171;
-    background: rgba(248, 113, 113, 0.1);
-    border: 1px solid rgba(248, 113, 113, 0.3);
-    padding: 2px 8px;
-    border-radius: 4px;
-    animation: errorPulse 2s ease-in-out infinite;
-}
-
-@keyframes errorPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-code);
 }
