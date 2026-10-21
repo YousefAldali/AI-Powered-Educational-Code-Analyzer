@@ -8,6 +8,9 @@ UNCERTAIN_THRESHOLD = 0.45
 # If code is shorter than this, classify directly without chunking
 SHORT_CODE_THRESHOLD = 1500
 
+# Maximum number of functions/methods sent to CodeBERT per request
+MAX_CHUNKS = 50
+
 
 def _extract_java_methods(code: str):
     # Extract functions from Java source using brace counting.
@@ -73,6 +76,25 @@ class JavaCodeClassifier:
     def __init__(self):
         self.model = CodeBERTModelJava()
 
+    @property
+    def weights_loaded(self) -> bool:
+        # False when running on base/untrained weights or when loading failed
+        return self.model.model is not None and getattr(self.model, "weights_loaded", False)
+
+    def _unavailable_result(self, total_functions=0):
+        # Model failed to load entirely: report "uncertain" with no confidence
+        # rather than a fake confident "clean" verdict.
+        return {
+            "label": "uncertain",
+            "raw_prediction": 0,
+            "probability_buggy": None,
+            "confidence": None,
+            "logits": [],
+            "method": "direct",
+            "flagged_functions": [],
+            "total_functions": total_functions,
+        }
+
     def classify(self, code: str):
         # Classify a single code snippet
         pred, prob_buggy, logits = self.model.predict(code)
@@ -104,6 +126,9 @@ class JavaCodeClassifier:
         return result
 
     def classify_smart(self, code: str):
+        if self.model.model is None:
+            return self._unavailable_result()
+
         # Short code: classify directly with confidence gating
         if len(code) < SHORT_CODE_THRESHOLD:
             result = self.classify(code)
@@ -124,6 +149,10 @@ class JavaCodeClassifier:
             result["flagged_functions"] = []
             result["total_functions"] = 0
             return result
+
+        total_found = len(chunks)
+        chunks_truncated = total_found > MAX_CHUNKS
+        chunks = chunks[:MAX_CHUNKS]  # first MAX_CHUNKS in file order
 
         # Classify each method individually
         per_function_results = []
@@ -188,5 +217,7 @@ class JavaCodeClassifier:
             "logits": [],
             "method": "chunked",
             "flagged_functions": flagged,
-            "total_functions": len(per_function_results),
+            "total_functions": total_found,
+            "analyzed_functions": len(per_function_results),
+            "chunks_truncated": chunks_truncated,
         }

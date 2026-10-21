@@ -37,6 +37,9 @@ class CodeBERTModelCSharp:
         # Default threshold (updated after training via deployment_policy.json)
         self.threshold = 0.5
 
+        # True only when the fine-tuned state dict was actually loaded
+        self.weights_loaded = False
+
         try:
             # Pick device
             if torch.backends.mps.is_available():
@@ -63,6 +66,7 @@ class CodeBERTModelCSharp:
             if os.path.exists(weights_path):
                 state_dict = torch.load(weights_path, map_location=self.device, weights_only=True)
                 self.model.load_state_dict(state_dict)
+                self.weights_loaded = True
                 print(f"Loaded fine-tuned weights from {weights_path}")
             else:
                 print(f"WARNING: pytorch_model.bin not found at {weights_path}. Using base weights only.")
@@ -97,7 +101,8 @@ class CodeBERTModelCSharp:
         # Returns: (prediction, probability_buggy, logits)
         if self.model is None:
             print("C# model is not loaded.")
-            return 0, 0.0, torch.tensor([0.0, 0.0])
+            # Neutral probability: must not read as a confident "clean" verdict
+            return 0, 0.5, torch.tensor([0.0, 0.0])
 
         encoded = self.tokenize(code)
         input_ids = encoded["input_ids"].to(self.device)

@@ -5,9 +5,75 @@ from typing import List, Dict
 
 #Python
 
+def _paren_depth(text: str) -> int:
+    return text.count("(") - text.count(")")
+
+
+def _while_can_terminate(loop: ast.While) -> bool:
+    # True if the loop body contains anything that can change state or exit:
+    # an assignment, a break (not belonging to a nested loop), return/raise,
+    # or a mutating method call on a name used in the loop condition
+    # (e.g. `while stack: stack.pop()`). Nested function/class bodies are ignored.
+    cond_names = {n.id for n in ast.walk(loop.test) if isinstance(n, ast.Name)}
+    stack = [(stmt, False) for stmt in loop.body]
+    while stack:
+        node, in_nested_loop = stack.pop()
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+            continue
+        if isinstance(node, (ast.Return, ast.Raise)):
+            return True
+        if isinstance(node, ast.Break) and not in_nested_loop:
+            return True
+        if isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign, ast.NamedExpr)):
+            return True
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name) and node.func.value.id in cond_names):
+            return True
+        nested = in_nested_loop or isinstance(node, (ast.For, ast.AsyncFor, ast.While))
+        for child in ast.iter_child_nodes(node):
+            stack.append((child, nested))
+    return False
+
+
+def _class_attribute_names(tree: ast.AST) -> set:
+    # Names used as `self.<name>` anywhere, plus names assigned directly in a class body.
+    names = set()
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) and n.value.id == "self":
+            names.add(n.attr)
+        elif isinstance(n, ast.ClassDef):
+            for stmt in n.body:
+                targets = stmt.targets if isinstance(stmt, ast.Assign) else (
+                    [stmt.target] if isinstance(stmt, ast.AnnAssign) else [])
+                names.update(t.id for t in targets if isinstance(t, ast.Name))
+    return names
+
+
+def _function_local_names(func: ast.AST) -> set:
+    # Names bound locally in a function other than via augmented assignment
+    # (parameters, `x = ...`, loop targets, with-as, etc.) plus global/nonlocal names.
+    aug_targets = {id(n.target) for n in ast.walk(func) if isinstance(n, ast.AugAssign)}
+    names = {a.arg for a in ast.walk(func.args) if isinstance(a, ast.arg)}
+    for n in ast.walk(func):
+        if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store) and id(n) not in aug_targets:
+            names.add(n.id)
+        elif isinstance(n, (ast.Global, ast.Nonlocal)):
+            names.update(n.names)
+    return names
+
+
 def analyze_python_patterns(code: str) -> List[Dict]:
     findings: List[Dict] = []
     lines = code.splitlines()
+
+    try:
+        tree = ast.parse(code)
+    except (SyntaxError, ValueError, RecursionError):
+        tree = None  # ValueError: e.g. null bytes in source
+    # Checks that report syntax/indentation errors are only reported when the
+    # code really fails to parse; on valid code they are false positives
+    # (e.g. multi-line calls, aligned continuation lines, `elsewhere = 1`).
+    parse_failed = tree is None
 
     #regex-based patterns 
 
@@ -17,7 +83,12 @@ def analyze_python_patterns(code: str) -> List[Dict]:
         # 1. Swapped compound operators: =+  =-  =*  =/
         for op, correct in [("=+", "+="), ("=-", "-="), ("=*", "*="), ("=/", "/=")]:
             if op in stripped:
-                match = re.search(r"(\w+)\s*" + re.escape(op) + r"\s*", stripped)
+                # Ignore keyword arguments / defaults inside parentheses, e.g. f(step=-1)
+                match = next(
+                    (m for m in re.finditer(r"(\w+)\s*" + re.escape(op) + r"\s*", stripped)
+                     if _paren_depth(stripped[:m.start()]) <= 0),
+                    None,
+                )
                 if match:
                     findings.append({
                         "line": i,
@@ -41,7 +112,6 @@ def analyze_python_patterns(code: str) -> List[Dict]:
                 var = m.group(1)
                 # Check if there's already a guard or if the collection is hardcoded non-empty
                 preceding = "\n".join(lines[max(0, i - 5) : i - 1])
-                all_code = "\n".join(lines)
                 has_guard = (
                     f"if not {var}" in preceding
                     or f"len({var}) == 0" in preceding
@@ -122,7 +192,7 @@ def analyze_python_patterns(code: str) -> List[Dict]:
             })
 
         # 6. Mixed tabs and spaces
-        if line and not line.isspace():
+        if parse_failed and line and not line.isspace():
             leading = line[:len(line) - len(line.lstrip())]
             if "\t" in leading and " " in leading:
                 findings.append({
@@ -147,7 +217,7 @@ def analyze_python_patterns(code: str) -> List[Dict]:
             if leading and "\t" not in leading:
                 indent_sizes.add(len(leading))
     # Check for odd indentation (e.g., 3 spaces mixed with 4 spaces)
-    if indent_sizes:
+    if parse_failed and indent_sizes:
         diffs = sorted(indent_sizes)
         # Find the smallest non-zero indent
         base_indents = [d for d in diffs if d > 0]
@@ -172,7 +242,7 @@ def analyze_python_patterns(code: str) -> List[Dict]:
                     break
 
     # 8. Missing indentation after block statement (if/for/while/def/class/else/elif/try/except/finally/with)
-    for i, line in enumerate(lines):
+    for i, line in enumerate(lines if parse_failed else []):
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
@@ -204,10 +274,7 @@ def analyze_python_patterns(code: str) -> List[Dict]:
                 break
 
     #AST-based patterns
-    try:
-        tree = ast.parse(code)
-    except SyntaxError:
-        tree = None
+    class_attrs = _class_attribute_names(tree) if tree else set()
 
     for node in ast.walk(tree) if tree else []:
         # 6. Mutable default arguments
@@ -241,7 +308,7 @@ def analyze_python_patterns(code: str) -> List[Dict]:
                 findings.append({
                     "line": node.lineno,
                     "type": "builtin_shadow",
-                    "severity": "high",
+                    "severity": "low",
                     "description": f"Variable `{node.id}` shadows the built-in `{node.id}()`",
                     "detail": (
                         f"Assigning to `{node.id}` hides Python's built-in function. "
@@ -254,21 +321,9 @@ def analyze_python_patterns(code: str) -> List[Dict]:
 
         # 9. While loop without increment (potential infinite loop)
         if isinstance(node, ast.While):
-            # Check the DIRECT body statements only (not nested blocks)
-            has_augassign_in_body = False
-            for stmt in node.body:
-                if isinstance(stmt, ast.AugAssign):
-                    has_augassign_in_body = True
-                # Also check simple assignment like i = i + 1
-                if isinstance(stmt, ast.Assign):
-                    has_augassign_in_body = True
-            # A return inside an if is conditional — doesn't guarantee termination
-            # Only count unconditional break/return at top level of body
-            has_unconditional_exit = False
-            for stmt in node.body:
-                if isinstance(stmt, (ast.Break, ast.Return)):
-                    has_unconditional_exit = True
-            if not has_augassign_in_body and not has_unconditional_exit:
+            # Flag only when nothing in the body can change state or leave the
+            # loop (conditional `break`/`return` and nested updates count).
+            if not _while_can_terminate(node):
                 findings.append({
                     "line": node.lineno,
                     "type": "infinite_loop",
@@ -288,11 +343,16 @@ def analyze_python_patterns(code: str) -> List[Dict]:
             first_arg = node.args.args[0].arg if node.args.args else None
             if first_arg == "self":
                 # Look for AugAssign targets that are bare Names (not self.x)
+                local_names = _function_local_names(node)
                 for child in ast.walk(node):
                     if isinstance(child, ast.AugAssign):
                         if isinstance(child.target, ast.Name):
                             var_name = child.target.id
-                            # Check if this variable is defined as self.var_name in __init__
+                            # Only flag when the name is an instance/class attribute
+                            # and is NOT a local variable of this method (local
+                            # accumulators like `total += x` are fine).
+                            if var_name not in class_attrs or var_name in local_names:
+                                continue
                             findings.append({
                                 "line": child.lineno,
                                 "type": "missing_self",
@@ -353,7 +413,7 @@ def analyze_python_patterns(code: str) -> List[Dict]:
                 })
 
         # 14. Assignment in condition (if x = 0:)
-        if re.match(r'^\s*(if|while|elif)\s+[^=]+=\s*[^=:]+\s*:', line) and '==' not in line and '!=' not in line and '<=' not in line and '>=' not in line and ':=' not in line:
+        if parse_failed and re.match(r'^\s*(if|while|elif)\s+[^=]+=\s*[^=:]+\s*:', line) and '==' not in line and '!=' not in line and '<=' not in line and '>=' not in line and ':=' not in line:
             findings.append({
                 "line": i,
                 "type": "assignment_in_condition",
@@ -379,7 +439,7 @@ def analyze_python_patterns(code: str) -> List[Dict]:
             })
 
         # 16. Python 2 print statement
-        if re.match(r'^\s*print\s+["\']', line):
+        if parse_failed and re.match(r'^\s*print\s+["\']', line):
             findings.append({
                 "line": i,
                 "type": "python2_print",
@@ -392,7 +452,7 @@ def analyze_python_patterns(code: str) -> List[Dict]:
             })
 
         # 17. Missing colon after def/for/while/if/elif/else/class/with/try/except
-        if re.match(r'^\s*(def |for |while |if |elif |else|class |with |try|except)', line):
+        if parse_failed and re.match(r'^\s*(def |for |while |if |elif |else\b|class |with |try\b|except\b)', line):
             s = stripped.rstrip()
             if s and not s.endswith(':') and not s.endswith('\\') and not s.startswith('#'):
                 # Check it's a complete statement (not multi-line)
@@ -409,7 +469,7 @@ def analyze_python_patterns(code: str) -> List[Dict]:
                     })
 
         # 18. Unmatched parentheses on a single line
-        if stripped.count('(') != stripped.count(')') and not stripped.endswith('\\'):
+        if parse_failed and stripped.count('(') != stripped.count(')') and not stripped.endswith('\\'):
             findings.append({
                 "line": i,
                 "type": "unmatched_parens",
@@ -580,7 +640,8 @@ def analyze_java_patterns(code: str) -> List[Dict]:
                     break
 
         # 7. While loop without increment
-        if re.match(r"\s*while\s*\(", line) and "while(true)" not in stripped.replace(" ", "") and "while (true)" not in stripped:
+        # (skip the `while (...);` tail of a do-while loop)
+        if re.match(r"\s*while\s*\(", line) and not stripped.rstrip().endswith(";") and "while(true)" not in stripped.replace(" ", "") and "while (true)" not in stripped:
             has_modifier = False
             for j in range(i, min(i + 15, len(lines))):
                 check = lines[j].strip()
@@ -665,9 +726,10 @@ def analyze_java_patterns(code: str) -> List[Dict]:
         if m3 and 'null' not in stripped and '"' not in stripped:
             v1, v2 = m3.group(1), m3.group(2)
             if v1[0].islower() and v2[0].islower() and v1 not in ('true','false','this') and v2 not in ('true','false','this','null'):
-                # Check if either looks like a String variable
-                ctx_block = '\n'.join(lines[max(0, i-10):i+1])
-                if 'String' in ctx_block or 'string' in ctx_block or 'toString' in ctx_block or 'reverse' in ctx_block:
+                # Only flag when one side is actually declared as a String
+                # (previously any nearby `String[] args` triggered a false positive
+                # on int comparisons).
+                if any(re.search(rf'\bString\s+{re.escape(v)}\b', code) for v in (v1, v2)):
                     findings.append({
                         "line": i,
                         "type": "string_comparison",
@@ -801,7 +863,9 @@ def analyze_csharp_patterns(code: str) -> List[Dict]:
             })
 
         # 3. String interpolation without $ prefix
-        if re.search(r'"[^"]*\{[^"]*\}"', stripped) and "$" not in stripped and "String.Format" not in stripped and "{{" not in stripped:
+        # Placeholder must start with an identifier: `{0}` / `{1:N2}` are valid
+        # composite-format items (Console.WriteLine("{0}", x), string.Format).
+        if re.search(r'"[^"]*\{[A-Za-z_][^"]*\}"', stripped) and "$" not in stripped and "String.Format" not in stripped and "{{" not in stripped:
             findings.append({
                 "line": i,
                 "type": "missing_interpolation",
@@ -871,7 +935,8 @@ def analyze_csharp_patterns(code: str) -> List[Dict]:
                         })
 
         # 7. While loop without increment
-        if re.match(r"\s*while\s*\(", line) and "while(true)" not in stripped.replace(" ", "") and "while (true)" not in stripped:
+        # (skip the `while (...);` tail of a do-while loop)
+        if re.match(r"\s*while\s*\(", line) and not stripped.rstrip().endswith(";") and "while(true)" not in stripped.replace(" ", "") and "while (true)" not in stripped:
             has_modifier = False
             for j in range(i, min(i + 15, len(lines))):
                 check = lines[j].strip()
@@ -1021,7 +1086,7 @@ def analyze_csharp_patterns(code: str) -> List[Dict]:
 # Public API
 
 def analyze_code(code: str, language: str) -> List[Dict]:
-    lang = language.lower()
+    lang = (language or "").lower()
     if lang == "python":
         results = analyze_python_patterns(code)
     elif lang == "java":

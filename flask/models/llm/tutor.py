@@ -1,8 +1,6 @@
 import logging
-import os
 import re
-import sys
-from pathlib import Path
+import threading
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -17,6 +15,7 @@ except ImportError:
 #Lazy-loaded model state
 _model = None
 _tokenizer = None
+_load_lock = threading.Lock()  # Flask serves requests on threads; load Qwen only once
 
 MODEL_ID = "Qwen/Qwen2.5-Coder-7B-Instruct"
 MAX_NEW_TOKENS = 360
@@ -29,6 +28,13 @@ def _load_model():
     if _model is not None:
         return _model, _tokenizer
 
+    with _load_lock:
+        if _model is None:
+            _model, _tokenizer = _load_model_locked()
+    return _model, _tokenizer
+
+
+def _load_model_locked():
     from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 
     logger.info("[LLM Tutor] Loading Qwen2.5-Coder-7B-Instruct (4-bit)…")
@@ -38,20 +44,19 @@ def _load_model():
         bnb_4bit_quant_type="nf4",
         bnb_4bit_use_double_quant=True,
     )
-    _model = AutoModelForCausalLM.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
         quantization_config=bnb_config,
         device_map="auto",
-        trust_remote_code=True,
     )
-    _model.eval()
+    model.eval()
 
-    _tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
-    if _tokenizer.pad_token is None:
-        _tokenizer.pad_token = _tokenizer.eos_token
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
 
     logger.info("[LLM Tutor] Model loaded successfully.")
-    return _model, _tokenizer
+    return model, tokenizer
 
 
 def _build_prompt(code: str, language: str, static_issues: list, codebert_label: str, flagged_functions: list = None) -> str:
@@ -59,7 +64,9 @@ def _build_prompt(code: str, language: str, static_issues: list, codebert_label:
     
     if flagged_functions:
         worst_func = max(flagged_functions, key=lambda f: f.get("confidence", 0))
-        code_view = f"// Flagged chunk: {worst_func['name']}\n{worst_func['code']}"
+        # Cap like the whole-file view so the prompt's instructions/format are
+        # not truncated away by MAX_INPUT_TOKENS on very long functions.
+        code_view = f"// Flagged chunk: {worst_func['name']}\n{worst_func['code'][:3000]}"
     else:
         code_view = code[:3000]
 
@@ -149,6 +156,34 @@ def _format_as_markdown(raw: str) -> str:
     return text
 
 
+def _finding_key(p: dict) -> tuple:
+    return (p.get("type"), (p.get("line_content") or "").strip(), p.get("description"))
+
+
+def _map_chunk_line(p: dict, chunk_code: str, func_lineno: int, code_lines: list):
+    # Translate a finding's chunk-relative line number to a line in the full file.
+    start = max((func_lineno or 1) - 1, 0)
+    content = (p.get("line_content") or "").strip()
+    if content:
+        for idx in list(range(start, len(code_lines))) + list(range(0, start)):
+            if code_lines[idx].strip() == content:
+                return idx + 1
+        return None
+    # No line text: offset from where the function header sits in the chunk
+    # (Python chunks are prefixed with the file's import lines).
+    if start >= len(code_lines):
+        return None
+    header = code_lines[start].strip()
+    chunk_lines = chunk_code.splitlines()
+    for k, chunk_line in enumerate(chunk_lines):
+        if chunk_line.strip() == header:
+            rel = (p.get("line") or 1) - 1 - k
+            if rel < 0:
+                return None
+            return start + rel + 1
+    return None
+
+
 def _placeholder_explanation(code: str, language: str, codebert_label: str, static_issues: list, flagged_functions: list = None) -> str:
     from models.llm.code_patterns import analyze_code
 
@@ -161,15 +196,24 @@ def _placeholder_explanation(code: str, language: str, codebert_label: str, stat
     patterns = analyze_code(code, language)
 
     # Also analyse individual flagged functions (may catch patterns the
+    # whole-file pass missed). Chunk findings carry chunk-relative line
+    # numbers, so de-duplicate by content and map lines back to the file.
     if flagged_functions:
-        seen = {(p["line"], p["type"]) for p in patterns}
+        code_lines = code.splitlines()
+        seen = {_finding_key(p) for p in patterns}
         for func in flagged_functions:
-            for p in analyze_code(func.get("code", ""), language):
-                key = (p["line"], p["type"])
-                if key not in seen:
-                    p["function"] = func["name"]
-                    patterns.append(p)
-                    seen.add(key)
+            func_code = func.get("code", "")
+            for p in analyze_code(func_code, language):
+                key = _finding_key(p)
+                if key in seen:
+                    continue
+                abs_line = _map_chunk_line(p, func_code, func.get("lineno", 1), code_lines)
+                if abs_line is None:
+                    continue
+                p["line"] = abs_line
+                p["function"] = func["name"]
+                patterns.append(p)
+                seen.add(key)
 
     has_patterns = bool(patterns)
 
@@ -477,6 +521,6 @@ def generate_educational_explanation(
         prompt = _build_prompt(code, language, static_issues, codebert_label, flagged_functions)
         raw = _call_model(tokenizer, model, prompt)
         return _format_as_markdown(raw)
-    except Exception as e:
+    except Exception:
         logger.exception("[LLM Tutor] GPU generation failed — falling back to placeholder.")
         return _placeholder_explanation(code, language, codebert_label, static_issues, flagged_functions)

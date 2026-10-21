@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import sys
 import tempfile
 from typing import Dict, Any
 
@@ -18,6 +19,7 @@ def run_static_analysis(code_content: str, language: str = "python") -> Dict[str
         }
 
     issues = []
+    tool_error = None  # tool failures are reported in the summary, not as code issues
     temp_path = None
 
     try:
@@ -49,9 +51,13 @@ def run_static_analysis(code_content: str, language: str = "python") -> Dict[str
                 pass # logic disabled
 
         # 4. Run Bandit (security checker)
-        bandit_output = run_analyzer(["bandit", "-r", temp_path, "-f", "json"])
+        # Run via the current interpreter so Bandit is found even when the
+        # venv's bin/ directory is not on PATH.
+        bandit_output = run_analyzer([sys.executable, "-m", "bandit", "-f", "json", "-q", temp_path])
 
-        if bandit_output:
+        if not bandit_output:
+            tool_error = "Static analysis (Bandit) produced no output."
+        else:
             try:
                 bandit_data = json.loads(bandit_output)
                 for result in bandit_data.get("results", []):
@@ -62,23 +68,23 @@ def run_static_analysis(code_content: str, language: str = "python") -> Dict[str
                         f"[Security - {severity}] Line {line_num}: {message}"
                     )
             except json.JSONDecodeError:
-                # Bandit failed to return JSON, ignore
-                pass
+                tool_error = "Static analysis (Bandit) returned unreadable output."
 
     except subprocess.TimeoutExpired:
-        issues.append("[Performance] Review timed out (code ran too long).")
+        tool_error = "Static analysis timed out."
     except Exception as e:
-        issues.append(f"[System Error] An unexpected issue occurred: {e}")
+        tool_error = f"Static analysis could not run: {e}"
     finally:
         # 5. Remove temporary file
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
-    summary = (
-        "No security issues found."
-        if not issues
-        else f"Found {len(issues)} issues to review. Use the explanations below to improve."
-    )
+    if tool_error:
+        summary = tool_error
+    elif not issues:
+        summary = "No security issues found."
+    else:
+        summary = f"Found {len(issues)} issues to review. Use the explanations below to improve."
 
     return {"issues": issues, "summary": summary}
 

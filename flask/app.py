@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import logging
 import os
 from models.CodeBERT_Python.classifier import CodeClassifier
 from models.CodeBERT_Java.classifier import JavaCodeClassifier
@@ -11,18 +12,53 @@ from models.llm.code_patterns import analyze_code
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]}})
 
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
+app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1MB — ample for a source file
 
-# Language-specific classifiers
-python_classifier = CodeClassifier()
-java_classifier = JavaCodeClassifier()
-csharp_classifier = CSharpCodeClassifier()
+logger = logging.getLogger(__name__)
 
-CLASSIFIERS = {
-    "python": python_classifier,
-    "java": java_classifier,
-    "csharp": csharp_classifier,
-}
+# Language-specific classifiers.
+# When started with `python app.py` and FLASK_DEBUG=1, Werkzeug's reloader runs this
+# module twice: once in a watcher process that never serves requests, and once
+# in the child that does (WERKZEUG_RUN_MAIN=true). Skip loading the three
+# CodeBERT models in the watcher so they are not held in memory twice.
+_DEBUG = os.environ.get("FLASK_DEBUG") == "1"
+_IS_RELOADER_WATCHER = (
+    __name__ == "__main__" and _DEBUG and os.environ.get("WERKZEUG_RUN_MAIN") != "true"
+)
+
+CLASSIFIERS = {}
+if not _IS_RELOADER_WATCHER:
+    CLASSIFIERS = {
+        "python": CodeClassifier(),
+        "java": JavaCodeClassifier(),
+        "csharp": CSharpCodeClassifier(),
+    }
+    # Make missing fine-tuned weights impossible to overlook at startup
+    for _lang, _clf in CLASSIFIERS.items():
+        if not _clf.weights_loaded:
+            _msg = (
+                f"\n{'!' * 72}\n"
+                f"!! WARNING: fine-tuned CodeBERT weights for '{_lang}' are NOT loaded.\n"
+                f"!! The {_lang} classifier is running on base/untrained weights (or failed to load);\n"
+                f"!! its bug-detection verdicts are NOT reliable.\n"
+                f"{'!' * 72}"
+            )
+            logger.warning(_msg)  # unconfigured logging still prints WARNING to stderr
+
+
+def _models_loaded():
+    return {lang: clf.weights_loaded for lang, clf in CLASSIFIERS.items()}
+
+
+@app.errorhandler(413)
+def payload_too_large(_e):
+    return jsonify({"error": "Uploaded code is too large."}), 413
+
+
+@app.errorhandler(500)
+def internal_error(_e):
+    # Keep error responses JSON so the frontend can display them
+    return jsonify({"error": "Internal server error while reviewing code."}), 500
 
 
 @app.route("/api/review", methods=["POST"])
@@ -34,7 +70,7 @@ def review():
     if request.content_type and "multipart/form-data" in request.content_type:
         file = request.files.get("file")
         if file:
-            filename = file.filename.lower()
+            filename = (file.filename or "").lower()
             if filename.endswith(".java"):
                 language = "java"
             elif filename.endswith(".py"):
@@ -55,6 +91,11 @@ def review():
         code = body.get("code", "")
         language = body.get("language", "python")
 
+    # Reject malformed JSON values (e.g. lists/numbers) instead of crashing
+    if not isinstance(code, str) or not isinstance(language, str):
+        return jsonify({"error": "Fields 'code' and 'language' must be strings."}), 400
+    language = language.strip().lower()
+
     if not code or not code.strip():
         return jsonify({"error": "No code provided."}), 400
 
@@ -73,9 +114,18 @@ def review():
     # second check: CodeBERT AI (it can split big files)
     codebert_result = classifier.classify_smart(code)
     cb_label = codebert_result.get("label", "clean").lower()
-    is_buggy = cb_label == "buggy"
-    is_uncertain = cb_label == "uncertain"
     codebert_confidence = codebert_result.get("confidence", None)
+
+    warnings = []
+    if not classifier.weights_loaded:
+        warnings.append(
+            f"CodeBERT model for {language} is not loaded – bug-detection verdict is not reliable."
+        )
+    if codebert_result.get("chunks_truncated"):
+        warnings.append(
+            f"Only the first {codebert_result.get('analyzed_functions', 0)} of "
+            f"{codebert_result.get('total_functions', 0)} functions were analysed by CodeBERT."
+        )
 
     # 3. Combine verdicts: if Bandit finds security issues but CodeBERT says clean,
     overall_label = codebert_result.get("label", "clean")
@@ -86,7 +136,6 @@ def review():
 
     # 3b. Pattern analysis: catch obvious bugs that CodeBERT may miss
     code_patterns = analyze_code(code, language)
-    high_severity_patterns = [p for p in code_patterns if p.get("severity") == "high"]
     med_severity_patterns = [p for p in code_patterns if p.get("severity") in ("high", "medium")]
 
     # Override to buggy if high or medium severity patterns found regardless of CodeBERT
@@ -127,13 +176,14 @@ def review():
         "language": language,
         "flagged_functions": codebert_result.get("flagged_functions", []),
         "total_functions": codebert_result.get("total_functions", 0),
+        "warnings": warnings,                                  # Reliability notes (may be empty)
     })
 
 
 @app.route("/api/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok"})
+    return jsonify({"status": "ok", "models_loaded": _models_loaded()})
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001, host="127.0.0.1")
+    app.run(debug=_DEBUG, port=5001, host="127.0.0.1")  # i.e. FLASK_DEBUG == "1"
