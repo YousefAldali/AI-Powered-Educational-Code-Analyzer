@@ -16,33 +16,6 @@ def calculate_average(numbers):
     return total / len(numbers)
 `
 
-// ── Confidence Gauge ──────────────────────────
-function ConfidenceGauge({ confidence, label }) {
-    const pct = Math.round((confidence ?? 0) * 100)
-    const radius = 38
-    const circ = 2 * Math.PI * radius
-    const offset = circ - (pct / 100) * circ
-    const color = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--amber)' : 'var(--red)'
-    return (
-        <div className={styles.gauge}>
-            <svg width="92" height="92" viewBox="0 0 92 92">
-                <circle cx="46" cy="46" r={radius} fill="none" stroke="var(--border)" strokeWidth="5" />
-                <circle
-                    cx="46" cy="46" r={radius}
-                    fill="none" stroke={color} strokeWidth="5"
-                    strokeLinecap="round"
-                    strokeDasharray={circ}
-                    strokeDashoffset={offset}
-                    transform="rotate(-90 46 46)"
-                    style={{ transition: 'stroke-dashoffset 1s ease' }}
-                />
-            </svg>
-            <div className={styles.gaugeValue} style={{ color }}>{pct}%</div>
-            <div className={styles.gaugeLabel}>{label || 'Confidence'}</div>
-        </div>
-    )
-}
-
 // ── Review History ──────────────────────────
 function HistoryPanel({ history, onSelect }) {
     if (!history.length) return null
@@ -77,44 +50,6 @@ function HistoryPanel({ history, onSelect }) {
         </div>
     )
 }
-
-// ── Stats Bar for Code Review ──────────────────
-function ReviewStats({ result }) {
-    if (!result) return null
-    const pred = result.prediction
-    const issues = result.static_analysis?.issues?.length ?? 0
-    const isBuggy = pred?.label?.toLowerCase() === 'buggy'
-
-    return (
-        <div className={styles.reviewStats}>
-            <ConfidenceGauge
-                confidence={pred?.confidence}
-                label="CodeBERT"
-            />
-            <div className={styles.statsCards}>
-                <div className={styles.miniStat}>
-                    <div className={styles.miniStatValue} style={{ color: isBuggy ? 'var(--red)' : 'var(--green)' }}>
-                        {pred?.label || '—'}
-                    </div>
-                    <div className={styles.miniStatLabel}>Verdict</div>
-                </div>
-                <div className={styles.miniStat}>
-                    <div className={styles.miniStatValue} style={{ color: issues > 0 ? 'var(--amber)' : 'var(--green)' }}>
-                        {issues}
-                    </div>
-                    <div className={styles.miniStatLabel}>Static Issues</div>
-                </div>
-                <div className={styles.miniStat}>
-                    <div className={styles.miniStatValue}>
-                        {pred?.codebert_label || '—'}
-                    </div>
-                    <div className={styles.miniStatLabel}>CodeBERT</div>
-                </div>
-            </div>
-        </div>
-    )
-}
-
 
 // Extract error line numbers from API result
 function getErrorLines(result) {

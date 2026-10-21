@@ -142,7 +142,6 @@
 
 @media (max-width: 900px) {
     .main { grid-template-columns: minmax(0, 1fr); gap: 28px; }
-    .reviewStats { flex-direction: column; align-items: center; }
 }
 
 @media (max-width: 560px) {
@@ -314,83 +313,15 @@
 /* ══════════════════════════════════════════
    CONFIDENCE GAUGE
    ══════════════════════════════════════════ */
-.gauge {
-    position: relative;
-    width: 92px;
-    height: 92px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-.gauge svg {
-    position: absolute;
-    top: 0; left: 0;
-}
-.gaugeValue {
-    font-family: var(--mono);
-    font-size: 1.3em;
-    font-weight: 800;
-    z-index: 1;
-    margin-top: -8px;
-}
-.gaugeLabel {
-    position: absolute;
-    bottom: 6px;
-    font-size: 0.55em;
-    font-family: var(--mono);
-    color: var(--text-muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
 
 /* ══════════════════════════════════════════
    REVIEW STATS BAR
    ══════════════════════════════════════════ */
-.reviewStats {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 14px 16px;
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    margin-bottom: 10px;
-    animation: fadeSlideIn 0.5s ease both;
-}
 @keyframes fadeSlideIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-.statsCards {
-    display: flex;
-    flex: 1;
-    gap: 12px;
-}
-.miniStat {
-    flex: 1;
-    text-align: center;
-    padding: 8px 6px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-}
-.miniStatValue {
-    font-family: var(--mono);
-    font-size: 0.9em;
-    font-weight: 700;
-    color: var(--text-primary);
-    text-transform: capitalize;
-}
-.miniStatLabel {
-    font-size: 0.6em;
-    font-family: var(--mono);
-    color: var(--text-muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-top: 2px;
-}
 
 /* ══════════════════════════════════════════
    REVIEW HISTORY PANEL

@@ -367,24 +367,6 @@
 /* ══════════════════════════════════════════
    FLOWCHARTS (SVG)
    ══════════════════════════════════════════ */
-.fcWrapper {
-    background: var(--dash-glass);
-    border: 1px solid var(--dash-border);
-    border-radius: var(--dash-radius);
-    padding: 2rem;
-    margin-bottom: 2rem;
-    overflow-x: auto;
-    transition: border-color 0.3s;
-}
-.fcWrapper:hover { border-color: rgba(74,124,201,0.2); }
-.fcSvg { width: 100%; height: auto; display: block; }
-.fcCaption {
-    text-align: center;
-    font-size: 0.82rem;
-    color: var(--dash-text-muted);
-    margin-top: 1rem;
-    font-style: italic;
-}
 
 /* ── Detailed flow sections ── */
 .detailedFlow { margin-top: 2rem; }
@@ -439,116 +421,6 @@
 }
 
 /* ── Native Flowchart Components ── */
-.flowchart {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-    padding: 1rem 0;
-}
-.fcNode {
-    padding: 0.45rem 1rem;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 0.78rem;
-    font-weight: 600;
-    border: 1px solid;
-    max-width: 220px;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-.fcNode:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-}
-.fcNodeSub {
-    font-weight: 400;
-    font-size: 0.65rem;
-    opacity: 0.7;
-    margin-top: 0.1rem;
-}
-.fcNodeBlue   { background: rgba(74,124,201,0.12);  border-color: rgba(74,124,201,0.3);  color: var(--dash-text); }
-.fcNodeGreen  { background: rgba(91,168,138,0.12);  border-color: rgba(91,168,138,0.3);  color: var(--dash-text); }
-.fcNodePurple { background: rgba(123,108,181,0.12);  border-color: rgba(123,108,181,0.3);  color: var(--dash-text); }
-.fcNodeOrange { background: rgba(201,145,90,0.12);  border-color: rgba(201,145,90,0.3);  color: var(--dash-text); }
-.fcNodeCyan   { background: rgba(91,158,189,0.12);   border-color: rgba(91,158,189,0.3);   color: var(--dash-text); }
-.fcNodeRed    { background: rgba(201,97,97,0.08);   border-color: rgba(201,97,97,0.35);  color: var(--dash-red); border-style: dashed; }
-.fcNodeGray   { background: rgba(90,109,138,0.1);  border-color: rgba(90,109,138,0.3); color: var(--dash-text-sec); }
-
-.fcDiamond {
-    width: 60px; height: 60px;
-    background: rgba(201,145,90,0.15);
-    border: 1px solid rgba(201,145,90,0.4);
-    transform: rotate(45deg);
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 6px;
-}
-.fcDiamond span {
-    transform: rotate(-45deg);
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--dash-orange);
-}
-
-.fcArrow {
-    color: var(--dash-text-muted);
-    font-size: 0.85rem;
-    padding: 0.05rem 0;
-    line-height: 1;
-}
-.fcLabel {
-    font-size: 0.68rem;
-    color: var(--dash-text-muted);
-    letter-spacing: 0.5px;
-}
-
-/* Flowchart rows for horizontal layouts */
-.fcRow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-.fcRowArrow {
-    color: var(--dash-text-muted);
-    font-size: 1rem;
-}
-
-/* Layer group boxes */
-.fcLayerBox {
-    border: 1px dashed;
-    border-radius: 10px;
-    padding: 0.6rem 0.8rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.3rem;
-}
-.fcLayerLabel {
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    margin-bottom: 0.1rem;
-}
-.fcLayerOrange { border-color: rgba(201,145,90,0.3); }
-.fcLayerPurple { border-color: rgba(123,108,181,0.3); }
-.fcLayerGreen  { border-color: rgba(91,168,138,0.3); }
-
-.fcLayerContent {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-/* Side-by-side layer boxes */
-.fcParallel {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-}
 
 /* ── 5-section output format ── */
 .outputSections {
@@ -959,7 +831,6 @@
 
 @media (max-width: 480px) {
     .glassCard { padding: 1.25rem; }
-    .fcWrapper { padding: 1.25rem; }
     .flowSection { padding: 1.25rem; }
     .compVal { font-size: 1.7rem; }
     .themeToggle, .backToTop { right: 1rem; }
