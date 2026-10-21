@@ -44,7 +44,7 @@ export function useReview() {
             } catch {
                 throw new Error(
                     `Server returned invalid response (${res.status}). ` +
-                    'Make sure the Flask backend is running on port 5000.'
+                    'Make sure the Flask backend is running: cd flask && ./venv/bin/python app.py (port 5001).'
                 )
             }
 
@@ -62,7 +62,7 @@ export function useReview() {
             setResult(data)
         } catch (err) {
             if (err.name === 'TypeError' && err.message.includes('fetch')) {
-                setError('Cannot reach the server. Make sure the Flask backend is running on port 5000.')
+                setError('Cannot reach the server. Make sure the Flask backend is running: cd flask && ./venv/bin/python app.py (port 5001).')
             } else {
                 setError(err.message ?? 'Unknown error')
             }

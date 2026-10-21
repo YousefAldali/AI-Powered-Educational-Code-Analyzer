@@ -4,34 +4,35 @@
    design-system tokens.
    ═══════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+/* Uses the app's own fonts and colour tokens (index.css) so the
+   dashboard looks like the same app as the review page. */
 
 .dashboard {
-    --dash-bg:         #0c1222;
-    --dash-bg-alt:     #111d32;
+    --dash-bg:         var(--bg-void);
+    --dash-bg-alt:     var(--bg-surface);
     --dash-glass:      rgba(255,255,255,0.025);
-    --dash-border:     rgba(255,255,255,0.07);
-    --dash-text:       #dce4f0;
-    --dash-text-sec:   #8a9bb8;
-    --dash-text-muted: #5a6d8a;
-    --dash-blue:       #4a7cc9;
-    --dash-purple:     #7b6cb5;
+    --dash-border:     var(--border);
+    --dash-text:       var(--text-primary);
+    --dash-text-sec:   var(--text-secondary);
+    --dash-text-muted: var(--text-muted);
+    --dash-blue:       var(--accent);
+    --dash-purple:     #9585cc;
     --dash-cyan:       #5b9ebd;
-    --dash-green:      #5ba88a;
-    --dash-orange:     #c9915a;
-    --dash-red:        #c96161;
+    --dash-green:      var(--green);
+    --dash-orange:     var(--amber);
+    --dash-red:        var(--red);
     --dash-pink:       #c97a8a;
-    --dash-grad:       linear-gradient(135deg, #4a7cc9, #c96161);
+    --dash-grad:       linear-gradient(135deg, #6292dc, #d47272);
     --dash-grad-cyan:  linear-gradient(135deg, #5b9ebd, #4a7cc9);
     --dash-grad-green: linear-gradient(135deg, #5ba88a, #5b9ebd);
     --dash-shadow:     0 25px 50px -12px rgba(0,0,0,0.4);
-    --dash-radius:     16px;
-    --dash-radius-sm:  10px;
+    --dash-radius:     12px;
+    --dash-radius-sm:  8px;
     --dash-card-bg:    rgba(17,29,50,0.7);
 
     background: var(--dash-bg);
     color: var(--dash-text);
-    font-family: 'Inter', var(--sans, sans-serif);
+    font-family: var(--sans);
     line-height: 1.7;
     overflow-x: hidden;
     min-height: 100vh;
@@ -46,12 +47,12 @@
     --dash-border:     rgba(60,50,40,0.12);
     --dash-text:       #2a2035;
     --dash-text-sec:   #554a60;
-    --dash-text-muted: #7a7085;
+    --dash-text-muted: #645a70;
     --dash-blue:       #3b6098;
     --dash-purple:     #5e4f8a;
     --dash-cyan:       #3a6e82;
-    --dash-green:      #3a7058;
-    --dash-orange:     #8a6535;
+    --dash-green:      #33634e;
+    --dash-orange:     #7a5628;
     --dash-red:        #904545;
     --dash-pink:       #845060;
     --dash-grad:       linear-gradient(135deg, #3b6098, #904545);
@@ -64,8 +65,8 @@
 /* ── Theme Toggle ── */
 .themeToggle {
     position: fixed;
-    top: 1.25rem;
-    right: 1.25rem;
+    bottom: 1.5rem;
+    right: 1.5rem;
     z-index: 950;
     width: 44px;
     height: 44px;
@@ -79,11 +80,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s;
+    transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
     box-shadow: 0 4px 15px rgba(0,0,0,0.15);
 }
 .themeToggle:hover {
-    transform: scale(1.1);
+    transform: scale(1.06);
     border-color: var(--dash-blue);
     box-shadow: 0 6px 20px rgba(0,0,0,0.2);
 }
@@ -96,7 +97,7 @@
 
 /* ── Sections ── */
 .section {
-    padding: 5rem 2rem;
+    padding: 4.5rem 2rem;
     position: relative;
 }
 .sectionAlt {
@@ -105,9 +106,10 @@
 
 /* ── Section labels / titles ── */
 .sectionLabel {
+    font-family: var(--mono);
     font-size: 0.75rem;
     font-weight: 700;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--dash-blue);
     margin-bottom: 0.75rem;
@@ -122,20 +124,21 @@
     border-radius: 2px;
 }
 .sectionTitle {
-    font-size: 2.4rem;
-    font-weight: 800;
+    font-size: clamp(1.7rem, 3.5vw, 2.3rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
     line-height: 1.2;
     margin-bottom: 1rem;
     color: var(--dash-text);
 }
 .sectionSub {
-    font-size: 1.05rem;
+    font-size: 1.02rem;
     color: var(--dash-text-sec);
     max-width: 640px;
     margin-bottom: 2.5rem;
 }
 .subTitle {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 700;
     margin-bottom: 1rem;
     color: var(--dash-text);
@@ -153,10 +156,9 @@
    HERO
    ══════════════════════════════════════════ */
 .hero {
-    min-height: 90vh;
     display: flex;
     align-items: center;
-    padding: 6rem 2rem 4rem;
+    padding: 3.5rem 2rem 2.5rem;
     position: relative;
     overflow: hidden;
 }
@@ -190,8 +192,9 @@
     background: var(--dash-green);
 }
 .heroTitle {
-    font-size: clamp(2.4rem, 5vw, 3.8rem);
-    font-weight: 900;
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
     line-height: 1.1;
     margin-bottom: 1.5rem;
     color: var(--dash-text);
@@ -214,22 +217,23 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 1rem;
-    max-width: 700px;
+    max-width: 880px; /* room for all five stat cards in one row */
 }
 .statCard {
     background: var(--dash-glass);
     border: 1px solid var(--dash-border);
     border-radius: var(--dash-radius-sm);
     padding: 1.25rem;
-    transition: all 0.3s;
+    transition: border-color 0.3s, transform 0.3s;
 }
 .statCard:hover {
-    border-color: rgba(74,124,201,0.3);
+    border-color: var(--border-bright);
     transform: translateY(-2px);
 }
 .statValue {
-    font-size: 1.8rem;
-    font-weight: 800;
+    font-family: var(--mono);
+    font-size: 1.6rem;
+    font-weight: 700;
     background: var(--dash-grad);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -248,12 +252,13 @@
     background: var(--dash-card-bg);
     border: 1px solid var(--dash-border);
     border-radius: var(--dash-radius);
-    padding: 2rem;
+    padding: 1.75rem;
     backdrop-filter: blur(10px);
-    transition: all 0.3s;
+    transition: border-color 0.3s;
+    min-width: 0;
 }
 .glassCard:hover {
-    border-color: rgba(74,124,201,0.2);
+    border-color: var(--border-bright);
 }
 .centeredCard { text-align: center; }
 
@@ -261,13 +266,13 @@
 .cardGrid2 {
     display: grid;
     gap: 1.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
     margin-bottom: 1.5rem;
 }
 .cardGrid3 {
     display: grid;
     gap: 1.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
     margin-bottom: 1.5rem;
 }
 
@@ -344,6 +349,7 @@
     letter-spacing: 0.5px;
     text-transform: uppercase;
     border-bottom: 1px solid var(--dash-border);
+    white-space: nowrap;
 }
 .tableWrapper td {
     padding: 0.8rem 1.2rem;
@@ -547,7 +553,7 @@
 /* ── 5-section output format ── */
 .outputSections {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
     gap: 0.8rem;
 }
 .outputSection {
@@ -660,8 +666,9 @@
     margin-bottom: 0.75rem;
 }
 .compVal {
-    font-size: 2.2rem;
-    font-weight: 800;
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 700;
     margin-bottom: 0.25rem;
 }
 .compUnit {
@@ -678,7 +685,7 @@
    ══════════════════════════════════════════ */
 .plotsGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
     gap: 1.25rem;
 }
 .plotCard {
@@ -691,7 +698,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 .plotCard:hover {
-    border-color: rgba(74,124,201,0.25);
+    border-color: var(--border-bright);
     transform: translateY(-4px);
     box-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
@@ -740,9 +747,9 @@
     padding: 1rem;
 }
 .plotModal::after {
-    content: 'Click anywhere to close';
+    content: 'Click anywhere or press Esc to close';
     font-size: 0.75rem;
-    color: rgba(255,255,255,0.4);
+    color: rgba(255,255,255,0.65);
     letter-spacing: 0.1em;
     text-transform: uppercase;
 }
@@ -752,7 +759,7 @@
    ══════════════════════════════════════════ */
 .takeawayGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
     gap: 1.5rem;
     text-align: left;
 }
@@ -816,8 +823,7 @@
     .flowSection { grid-template-columns: 1fr; }
     .plotsGrid { grid-template-columns: 1fr; }
     .section { padding: 3rem 1rem; }
-    .hero { padding: 4rem 1rem 3rem; min-height: auto; }
-    .sectionNav { display: none; }
+    .hero { padding: 2.5rem 1rem 2rem; min-height: auto; }
 }
 
 /* ══════════════════════════════════════════
@@ -825,11 +831,11 @@
    ══════════════════════════════════════════ */
 .backToTop {
     position: fixed;
-    bottom: 2rem;
-    right: 2rem;
+    bottom: calc(1.5rem + 56px); /* sits just above the theme toggle */
+    right: 1.5rem;
     z-index: 900;
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     border: 1px solid var(--dash-border);
     background: var(--dash-card-bg);
@@ -837,7 +843,7 @@
     color: var(--dash-text);
     font-size: 1.3rem;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: background 0.3s, border-color 0.3s, transform 0.3s;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -845,10 +851,9 @@
     animation: fadeIn 0.3s ease;
 }
 .backToTop:hover {
-    background: rgba(59, 130, 246, 0.2);
+    background: var(--accent-glow);
     border-color: var(--dash-blue);
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(59, 130, 246, 0.2);
 }
 
 /* ══════════════════════════════════════════
@@ -879,11 +884,12 @@
     border: none;
     cursor: pointer;
     border-radius: 6px;
-    transition: all 0.25s;
+    transition: background 0.25s;
     white-space: nowrap;
+    font-family: var(--sans);
 }
 .sectionNavBtn:hover {
-    background: rgba(59, 130, 246, 0.1);
+    background: var(--accent-glow);
 }
 .sectionNavDot {
     width: 6px;
@@ -902,7 +908,7 @@
 }
 .sectionNavActive .sectionNavDot {
     background: var(--dash-blue);
-    box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 8px var(--accent-glow);
     width: 8px;
     height: 8px;
 }
@@ -917,7 +923,7 @@
 .plotSkeleton {
     width: 100%;
     height: 220px;
-    background: rgba(30, 41, 59, 0.5);
+    background: var(--bg-elevated);
     overflow: hidden;
     position: relative;
 }
@@ -930,7 +936,7 @@
     background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(59, 130, 246, 0.06) 50%,
+        rgba(98, 146, 220, 0.08) 50%,
         transparent 100%
     );
     animation: shimmerAnim 1.5s ease-in-out infinite;
@@ -938,4 +944,23 @@
 @keyframes shimmerAnim {
     0% { left: -100%; }
     100% { left: 100%; }
+}
+
+/* The side navigation sits in the page margin. On medium screens that margin
+   is too narrow, so it would cover the content: show dots only, and hide it
+   where even the dots would overlap. */
+@media (max-width: 1440px) {
+    .sectionNavLabel { display: none; }
+    .sectionNavBtn { padding: 0.45rem; }
+}
+@media (max-width: 1200px) {
+    .sectionNav { display: none; }
+}
+
+@media (max-width: 480px) {
+    .glassCard { padding: 1.25rem; }
+    .fcWrapper { padding: 1.25rem; }
+    .flowSection { padding: 1.25rem; }
+    .compVal { font-size: 1.7rem; }
+    .themeToggle, .backToTop { right: 1rem; }
 }
