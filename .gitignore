@@ -73,3 +73,6 @@ training_modules/java/java_training/trained_model_codebert_java/
 c_sharp_finalllll/
 zip_archives/
 demo_model_output/
+
+# graphify knowledge graph output (local paths, regenerated)
+graphify-out/

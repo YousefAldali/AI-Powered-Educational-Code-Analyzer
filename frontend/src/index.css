@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+/* Fonts (DM Sans + Space Mono) are loaded once in index.html */
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -7,25 +7,40 @@
 }
 
 :root {
+  /* Surfaces (darkest → lightest) */
   --bg-void:       #0c1222;
   --bg-surface:    #0f1a2e;
   --bg-panel:      #111d32;
   --bg-elevated:   #1a2940;
   --border:        #1e3352;
   --border-bright: #2d4a6e;
-  --accent:        #4a7cc9;
-  --accent-dim:    #3a6ab5;
-  --accent-glow:   rgba(74, 124, 201, 0.15);
+
+  /* Accent – slightly lighter than before so blue text passes WCAG AA */
+  --accent:        #6292dc;
+  --accent-dim:    #4a7cc9;
+  --accent-hover:  #7aa3e3;
+  --accent-glow:   rgba(98, 146, 220, 0.14);
+
+  /* Status colours */
   --green:         #5ba88a;
   --green-glow:    rgba(91, 168, 138, 0.12);
-  --red:           #c96161;
-  --red-glow:      rgba(201, 97, 97, 0.12);
+  --red:           #d47272;
+  --red-glow:      rgba(212, 114, 114, 0.12);
   --amber:         #c9915a;
+  --amber-glow:    rgba(201, 145, 90, 0.12);
+
+  /* Text – muted raised from #5a6d8a (3.2:1) to pass AA (≥4.5:1) */
   --text-primary:  #dce4f0;
-  --text-secondary:#8a9bb8;
-  --text-muted:    #5a6d8a;
-  --mono:          'Space Mono', monospace;
-  --sans:          'DM Sans', sans-serif;
+  --text-secondary:#a3b2c9;
+  --text-muted:    #7d90ae;
+
+  /* Shape & spacing */
+  --radius:        10px;
+  --radius-sm:     6px;
+  --gutter:        28px;
+
+  --mono:          'Space Mono', ui-monospace, monospace;
+  --sans:          'DM Sans', system-ui, -apple-system, sans-serif;
 }
 
 html, body, #root {
@@ -38,8 +53,35 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
 }
 
+body { overflow-x: hidden; }
+
+/* Buttons inherit the app fonts */
+button { font: inherit; color: inherit; }
+
+/* Visible keyboard focus everywhere (mouse clicks stay clean) */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection { background: rgba(98, 146, 220, 0.35); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 640px) {
+  :root { --gutter: 16px; }
+}
+
 /* Scrollbars */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+* { scrollbar-width: thin; scrollbar-color: var(--border-bright) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
@@ -54,6 +96,7 @@ html, body, #root {
 .tutor-markdown h2 { font-size: 1em; }
 .tutor-markdown h3 { font-size: 0.95em; color: var(--text-secondary); }
 
+.tutor-markdown > :first-child { margin-top: 0; }
 .tutor-markdown p { margin-bottom: 0.8em; color: var(--text-primary); }
 
 .tutor-markdown code {
@@ -104,18 +147,43 @@ html, body, #root {
 .tutor-markdown strong { color: var(--text-primary); font-weight: 600; }
 .tutor-markdown em { color: var(--accent); font-style: normal; }
 
+.tutor-markdown a { color: var(--accent); text-underline-offset: 2px; }
+.tutor-markdown a:hover { color: var(--accent-hover); }
+
+.tutor-markdown hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.2em 0;
+}
+
+.tutor-markdown table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 0.8em 0;
+  font-size: 0.92em;
+}
+.tutor-markdown th,
+.tutor-markdown td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: left;
+}
+.tutor-markdown th { background: var(--bg-elevated); color: var(--text-primary); }
+
 /* Monaco editor error line decorations (must be global) */
 .error-line-highlight {
-  background: rgba(201, 97, 97, 0.12) !important;
-  border-left: 3px solid #c96161 !important;
+  background: rgba(212, 114, 114, 0.12) !important;
+  border-left: 3px solid #d47272 !important;
 }
 
 .error-glyph-margin {
-  background: #c96161;
+  background: #d47272;
   border-radius: 50%;
   width: 8px !important;
   height: 8px !important;
   margin-left: 4px;
   margin-top: 6px;
-  box-shadow: 0 0 6px rgba(201, 97, 97, 0.5);
+  box-shadow: 0 0 6px rgba(212, 114, 114, 0.5);
 }

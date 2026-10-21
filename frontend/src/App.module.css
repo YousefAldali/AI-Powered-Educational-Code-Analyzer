@@ -8,7 +8,7 @@
 /* ── Header ── */
 .header {
     border-bottom: 1px solid var(--border);
-    padding: 0 28px;
+    padding: 0 var(--gutter);
     flex-shrink: 0;
     position: sticky;
     top: 0;
@@ -41,9 +41,12 @@
 
 .logoGlyph {
     font-size: 1.4em;
+    line-height: 1;
     color: var(--accent);
-    animation: glyph-spin 8s linear infinite;
+    transition: transform 0.6s ease;
 }
+/* Spin only when hovering the logo instead of forever (less distracting) */
+.logo:hover .logoGlyph { animation: glyph-spin 1.2s ease-in-out; }
 
 @keyframes glyph-spin {
     0% { transform: rotate(0deg); }
@@ -60,21 +63,23 @@
 
 .logoBeta {
     font-family: var(--mono);
-    font-size: 0.58em;
+    font-size: 10px;
+    line-height: 1.4;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     background: var(--accent-glow);
     color: var(--accent);
     border: 1px solid var(--accent-dim);
-    padding: 2px 6px;
+    padding: 1px 6px;
     border-radius: 4px;
     align-self: center;
 }
 
 .tagline {
-    font-size: 0.78em;
+    font-size: 13px;
     color: var(--text-muted);
-    letter-spacing: 0.02em;
+    padding-left: 16px;
+    border-left: 1px solid var(--border);
 }
 
 /* ── Navigation ── */
@@ -91,21 +96,22 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    justify-content: center;
     padding: 7px 16px;
     font-family: var(--mono);
-    font-size: 0.72em;
-    font-weight: 500;
-    letter-spacing: 0.06em;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
     text-decoration: none;
-    color: var(--text-muted);
-    border-radius: 6px;
-    transition: all 0.2s;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    transition: background 0.2s, color 0.2s;
     white-space: nowrap;
 }
 
 .navLink:hover {
-    color: var(--text-secondary);
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .navLinkActive {
@@ -120,20 +126,29 @@
 .main {
     flex: 1;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    padding: 20px 28px;
+    /* minmax(0, 1fr) stops the editor from forcing the page wider than the screen */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    padding: 24px var(--gutter);
     max-width: 1400px;
     width: 100%;
     margin: 0 auto;
     align-items: start;
 }
 
+@media (max-width: 1100px) {
+    .tagline { display: none; }
+}
+
 @media (max-width: 900px) {
-    .main { grid-template-columns: 1fr; }
-    .logoArea { flex-direction: column; align-items: flex-start; gap: 4px; }
-    .headerInner { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .main { grid-template-columns: minmax(0, 1fr); gap: 28px; }
     .reviewStats { flex-direction: column; align-items: center; }
+}
+
+@media (max-width: 560px) {
+    .headerInner { flex-direction: column; align-items: stretch; gap: 10px; }
+    .nav { width: 100%; }
+    .navLink { flex: 1; padding: 8px 10px; }
 }
 
 /* ── Section labels ── */
@@ -141,12 +156,14 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    min-height: 24px;
     font-family: var(--mono);
-    font-size: 0.68em;
+    font-size: 11px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--text-muted);
     margin-bottom: 8px;
+    min-width: 0;
 }
 
 .labelDot {
@@ -160,7 +177,11 @@
 }
 
 .fileName {
-    font-size: 0.9em;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
     color: var(--text-secondary);
     background: var(--bg-elevated);
     border: 1px solid var(--border);
@@ -175,8 +196,23 @@
     display: flex;
     flex-direction: column;
     gap: 0;
+    min-width: 0;
 }
-.tutorSection { min-height: 560px; }
+
+/* Desktop: feedback panel is about as tall as the editor and scrolls inside itself */
+.tutorSection {
+    position: sticky;
+    top: 84px;
+    height: clamp(320px, 55vh, 480px);
+}
+
+@media (max-width: 900px) {
+    .tutorSection {
+        position: static;
+        /* stays compact on phones too; long feedback scrolls inside the panel */
+        height: clamp(320px, 60vh, 480px);
+    }
+}
 
 /* ── Action bar ── */
 .actions {
@@ -190,21 +226,23 @@
 .submitBtn {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    padding: 10px 22px;
+    height: 38px;
+    padding: 0 20px;
     background: var(--accent);
     color: var(--bg-void);
     border: none;
-    border-radius: 7px;
+    border-radius: var(--radius-sm);
     font-family: var(--mono);
-    font-size: 0.8em;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.04em;
     cursor: pointer;
     transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
 }
 .submitBtn:hover:not(:disabled) {
-    background: var(--accent-dim);
+    background: var(--accent-hover);
     box-shadow: 0 0 16px var(--accent-glow);
 }
 .submitBtn:active:not(:disabled) { transform: scale(0.97); }
@@ -222,13 +260,15 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .uploadBtn {
-    padding: 9px 16px;
+    height: 38px;
+    padding: 0 16px;
     background: transparent;
     border: 1px solid var(--border-bright);
     color: var(--text-secondary);
-    border-radius: 7px;
+    border-radius: var(--radius-sm);
     font-family: var(--mono);
-    font-size: 0.75em;
+    font-size: 12px;
+    white-space: nowrap;
     cursor: pointer;
     transition: border-color 0.2s, color 0.2s;
 }
@@ -240,24 +280,36 @@
 /* ── Language toggle ── */
 .langToggle {
     display: flex;
+    height: 38px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     overflow: hidden;
     margin-left: auto;
 }
 .langBtn {
-    padding: 7px 14px;
+    padding: 0 14px;
     background: transparent;
     border: none;
+    border-right: 1px solid var(--border);
     color: var(--text-muted);
     font-family: var(--mono);
-    font-size: 0.68em;
-    letter-spacing: 0.1em;
+    font-size: 11px;
+    letter-spacing: 0.08em;
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
 }
-.langBtn:hover { background: var(--bg-elevated); color: var(--text-secondary); }
-.langBtnActive { background: var(--accent-glow); color: var(--accent); }
+.langBtn:last-child { border-right: none; }
+.langBtn:hover:not(:disabled) { background: var(--bg-elevated); color: var(--text-primary); }
+.langBtn:disabled { cursor: not-allowed; opacity: 0.6; }
+.langBtn:focus-visible { outline-offset: -2px; }
+.langBtnActive,
+.langBtnActive:hover:not(:disabled) { background: var(--accent-glow); color: var(--accent); font-weight: 700; }
+
+@media (max-width: 480px) {
+    .submitBtn { flex: 1 1 100%; }
+    .uploadBtn { flex: 1; }
+    .langToggle { margin-left: 0; }
+}
 
 /* ══════════════════════════════════════════
    CONFIDENCE GAUGE
@@ -346,7 +398,7 @@
 .historyPanel {
     margin-top: 16px;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radius);
     overflow: hidden;
     background: var(--bg-surface);
     animation: fadeSlideIn 0.4s ease both;
@@ -357,10 +409,10 @@
     gap: 8px;
     padding: 10px 14px;
     font-family: var(--mono);
-    font-size: 0.68em;
+    font-size: 11px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     background: var(--bg-panel);
     border-bottom: 1px solid var(--border);
 }
@@ -369,7 +421,8 @@
 }
 .historyCount {
     margin-left: auto;
-    font-size: 0.9em;
+    font-size: 11px;
+    letter-spacing: 0;
     background: var(--accent-glow);
     color: var(--accent);
     padding: 1px 6px;
@@ -377,7 +430,7 @@
     font-weight: 700;
 }
 .historyList {
-    max-height: 160px;
+    max-height: 200px;
     overflow-y: auto;
 }
 .historyItem {
@@ -385,7 +438,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 14px;
+    padding: 9px 14px;
     background: none;
     border: none;
     border-bottom: 1px solid var(--border);
@@ -394,7 +447,8 @@
     text-align: left;
 }
 .historyItem:last-child { border-bottom: none; }
-.historyItem:hover { background: rgba(56, 189, 248, 0.04); }
+.historyItem:hover { background: var(--accent-glow); }
+.historyItem:focus-visible { outline-offset: -2px; }
 
 .historyDot {
     width: 8px; height: 8px;
@@ -411,19 +465,20 @@
 }
 .historyLang {
     font-family: var(--mono);
-    font-size: 0.65em;
+    font-size: 11px;
     font-weight: 700;
     color: var(--accent);
     letter-spacing: 0.08em;
 }
 .historyTime {
-    font-size: 0.6em;
+    font-size: 11px;
     color: var(--text-muted);
     font-family: var(--mono);
 }
 .historyPreview {
     font-family: var(--mono);
-    font-size: 0.7em;
+    font-size: 12px;
+    min-width: 0;
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -434,7 +489,7 @@
 /* ── Footer ── */
 .footer {
     text-align: center;
-    padding: 16px 20px;
+    padding: 16px var(--gutter);
     border-top: 1px solid var(--border);
     background: var(--bg-surface);
 }
@@ -445,8 +500,8 @@
     gap: 6px;
     flex-wrap: wrap;
     font-family: var(--mono);
-    font-size: 0.62em;
-    letter-spacing: 0.06em;
+    font-size: 11px;
+    letter-spacing: 0.04em;
     color: var(--text-muted);
 }
 .footerDivider {
@@ -455,7 +510,11 @@
 
 /* ── Page transition ── */
 .pageTransition {
-    animation: pageIn 0.4s ease-out both;
+    /* "backwards" (not "both") so no transform is left behind after the
+       animation – a leftover transform breaks position: fixed children
+       such as the Dashboard's theme toggle and back-to-top button. */
+    animation: pageIn 0.4s ease-out backwards;
+    min-width: 0;
     flex: 1;
     display: flex;
     flex-direction: column;

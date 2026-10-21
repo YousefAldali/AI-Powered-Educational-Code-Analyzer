@@ -23,32 +23,33 @@ const THEME_DEF = {
     base: 'vs-dark',
     inherit: true,
     rules: [
-        { token: '', foreground: 'e2e8f0', background: '020617' },
-        { token: 'comment', foreground: '475569' },
-        { token: 'keyword', foreground: '38bdf8' },
+        { token: '', foreground: 'dce4f0', background: '0c1222' },
+        { token: 'comment', foreground: '7d90ae', fontStyle: 'italic' },
+        { token: 'keyword', foreground: '7aa3e3' },
         { token: 'string', foreground: '4ade80' },
         { token: 'number', foreground: 'fbbf24' },
         { token: 'type', foreground: 'a78bfa' },
         { token: 'delimiter', foreground: '94a3b8' },
     ],
     colors: {
-        'editor.background': '#020617',
-        'editorGutter.background': '#020617',
-        'editorLineNumber.foreground': '#2d4a6e',
-        'editorLineNumber.activeForeground': '#38bdf8',
-        'editorCursor.foreground': '#38bdf8',
-        'editor.foreground': '#e2e8f0',
-        'editor.lineHighlightBackground': '#0f172a',
-        'editor.selectionBackground': '#1e3a8a55',
-        'scrollbarSlider.background': '#1e293b88',
-        'scrollbarSlider.hoverBackground': '#1e293bcc',
-        'editorWidget.background': '#0b1120',
-        'editorSuggestWidget.background': '#0b1120',
+        'editor.background': '#0c1222',
+        'editorGutter.background': '#0c1222',
+        'editorLineNumber.foreground': '#4d6283',
+        'editorLineNumber.activeForeground': '#7aa3e3',
+        'editorCursor.foreground': '#7aa3e3',
+        'editor.foreground': '#dce4f0',
+        'editor.lineHighlightBackground': '#111d32',
+        'editor.lineHighlightBorder': '#111d32',
+        'editor.selectionBackground': '#4a7cc955',
+        'scrollbarSlider.background': '#2d4a6e88',
+        'scrollbarSlider.hoverBackground': '#2d4a6ecc',
+        'editorWidget.background': '#111d32',
+        'editorSuggestWidget.background': '#111d32',
         'editorSuggestWidget.border': '#1e3352',
     },
 }
 
-export default function CodeEditor({ value, onChange, language, onLanguageChange, errorLines = [] }) {
+export default function CodeEditor({ value, onChange, language, onLanguageChange, autoDetect = true, errorLines = [] }) {
     const editorRef = useRef(null)
     const monacoRef = useRef(null)
     const decorationsRef = useRef([])
@@ -74,11 +75,11 @@ export default function CodeEditor({ value, onChange, language, onLanguageChange
                 glyphMarginClassName: 'error-glyph-margin',
                 glyphMarginHoverMessage: { value: '⚠ Issue detected on this line' },
                 overviewRuler: {
-                    color: '#f87171',
+                    color: '#d47272',
                     position: monaco.editor.OverviewRulerLane.Full,
                 },
                 minimap: {
-                    color: '#f87171',
+                    color: '#d47272',
                     position: monaco.editor.MinimapPosition.Inline,
                 },
             },
@@ -90,15 +91,11 @@ export default function CodeEditor({ value, onChange, language, onLanguageChange
         )
     }, [errorLines])
 
-    // Auto-detect language when value changes externally (e.g. file upload)
-    useEffect(() => {
-        const detected = detectLanguage(value)
-        if (detected !== language) onLanguageChange?.(detected)
-    }, [value]) // eslint-disable-line
-
     function handleChange(val) {
         const code = val ?? ''
         onChange(code)
+        // Only guess the language while the user hasn't chosen one
+        if (!autoDetect) return
         const detected = detectLanguage(code)
         if (detected !== language) onLanguageChange?.(detected)
     }
@@ -106,18 +103,20 @@ export default function CodeEditor({ value, onChange, language, onLanguageChange
     return (
         <div className={styles.wrapper}>
             <div className={styles.header}>
-                <span className={styles.dots}>
+                <span className={styles.dots} aria-hidden="true">
                     <span /><span /><span />
                 </span>
-                <span className={styles.langBadge}>{language.toUpperCase()}</span>
-                {errorLines.length > 0 && (
-                    <span className={styles.errorBadge}>
-                        {errorLines.length} issue{errorLines.length > 1 ? 's' : ''} found
-                    </span>
-                )}
+                <span className={styles.badges}>
+                    {errorLines.length > 0 && (
+                        <span className={styles.errorBadge}>
+                            {errorLines.length} issue{errorLines.length > 1 ? 's' : ''} found
+                        </span>
+                    )}
+                    <span className={styles.langBadge}>{language === 'csharp' ? 'C#' : language.toUpperCase()}</span>
+                </span>
             </div>
             <Editor
-                height="420px"
+                height="clamp(280px, 55vh, 420px)"
                 language={language}
                 value={value}
                 theme="tutorTheme"

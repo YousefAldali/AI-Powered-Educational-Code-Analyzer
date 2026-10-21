@@ -128,10 +128,26 @@ function EmptyState() {
 
 function ErrorState({ message }) {
     return (
-        <div className={styles.errorState}>
+        <div className={styles.errorState} role="alert">
             <span className={styles.errorIcon}>✕</span>
             <div className={styles.errorTitle}>Something went wrong</div>
             <div className={styles.errorMsg}>{message}</div>
+        </div>
+    )
+}
+
+// Backend warnings (e.g. model not loaded, file only partly analysed)
+
+function Warnings({ warnings }) {
+    if (!Array.isArray(warnings) || warnings.length === 0) return null
+    return (
+        <div className={styles.warnings} role="status">
+            {warnings.map((w, i) => (
+                <div key={i} className={styles.warningItem}>
+                    <span className={styles.warningIcon} aria-hidden="true">!</span>
+                    <span>{w}</span>
+                </div>
+            ))}
         </div>
     )
 }
@@ -142,16 +158,25 @@ export default function TutorPanel({ result, isLoading, error }) {
     return (
         <div className={styles.panel}>
             <div className={styles.panelHeader}>
-                <span className={styles.panelTitle}>Tutor Feedback</span>
+                <span className={styles.panelTitle}>
+                    {isLoading
+                        ? 'Analysing…'
+                        : error
+                            ? 'Error'
+                            : result
+                                ? 'Review complete'
+                                : 'Waiting for code'}
+                </span>
             </div>
 
-            <div className={styles.panelBody}>
+            <div className={styles.panelBody} aria-live="polite" aria-busy={isLoading}>
                 {isLoading && <LoadingState />}
                 {!isLoading && error && <ErrorState message={error} />}
                 {!isLoading && !error && !result && <EmptyState />}
 
                 {!isLoading && !error && result && (
                     <div className={styles.results}>
+                        <Warnings warnings={result.warnings} />
                         <Verdict
                             label={result.prediction?.label}
                             codebertLabel={result.prediction?.codebert_label}

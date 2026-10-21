@@ -1,6 +1,6 @@
 .wrapper {
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radius);
     overflow: hidden;
     background: var(--bg-void);
     transition: border-color 0.2s;
@@ -15,8 +15,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 14px;
-    background: var(--bg-surface);
+    gap: 10px;
+    min-height: 42px;
+    padding: 0 14px;
+    background: var(--bg-panel);
     border-bottom: 1px solid var(--border);
 }
 
@@ -32,22 +34,21 @@
     background: var(--border-bright);
 }
 
-.dots span:nth-child(1) {
-    background: #f87171;
+.badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
 }
 
-.dots span:nth-child(2) {
-    background: #fbbf24;
-}
-
-.dots span:nth-child(3) {
-    background: #4ade80;
-}
+.dots span:nth-child(1) { background: var(--red); }
+.dots span:nth-child(2) { background: var(--amber); }
+.dots span:nth-child(3) { background: var(--green); }
 
 .langBadge {
     font-family: var(--mono);
-    font-size: 0.7em;
-    letter-spacing: 0.1em;
+    font-size: 11px;
+    letter-spacing: 0.08em;
     color: var(--accent);
     background: var(--accent-glow);
     border: 1px solid var(--accent-dim);
@@ -57,14 +58,16 @@
 
 .errorBadge {
     font-family: var(--mono);
-    font-size: 0.65em;
-    letter-spacing: 0.06em;
-    color: #f87171;
-    background: rgba(248, 113, 113, 0.1);
-    border: 1px solid rgba(248, 113, 113, 0.3);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    color: var(--red);
+    background: var(--red-glow);
+    border: 1px solid rgba(212, 114, 114, 0.35);
     padding: 2px 8px;
     border-radius: 4px;
-    animation: errorPulse 2s ease-in-out infinite;
+    /* pulse a few times to draw the eye, then settle */
+    animation: errorPulse 2s ease-in-out 3;
 }
 
 @keyframes errorPulse {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import styles from './Dashboard.module.css'
+import { Steps, Tiles, Tile, Flow, Note } from './PipelineSteps'
 
 /* ═══════════════════════════════════════════
    Data-analysis dashboard – ported from
@@ -199,12 +200,15 @@ function SectionNav() {
         return () => obs.disconnect()
     }, [])
     return (
-        <nav className={styles.sectionNav}>
+        <nav className={styles.sectionNav} aria-label="Dashboard sections">
             {SECTIONS.map(s => (
                 <button
                     key={s.id}
                     className={`${styles.sectionNavBtn} ${active === s.id ? styles.sectionNavActive : ''}`}
                     onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    title={s.label}
+                    aria-label={s.label}
+                    aria-current={active === s.id ? 'true' : undefined}
                 >
                     <span className={styles.sectionNavDot} />
                     <span className={styles.sectionNavLabel}>{s.label}</span>
@@ -337,49 +341,62 @@ export default function Dashboard() {
                     {/* Pipeline Diagram (hand-drawn) */}
                     <FadeUp>
                         <GlassCard>
-                        <div className={styles.flowchart}>
-                            <div className={`${styles.fcNode} ${styles.fcNodeGray}`}>Student Submits Code<div className={styles.fcNodeSub}>React + Monaco Editor</div></div>
-                            <div className={styles.fcArrow}>↓</div>
-                            <div className={`${styles.fcNode} ${styles.fcNodeGray}`}>Language Detection<div className={styles.fcNodeSub}>.py · .java · .cs</div></div>
-                            <div className={styles.fcArrow}>↓</div>
-                            <div className={`${styles.fcNode} ${styles.fcNodeGreen}`}>Flask API Orchestrator</div>
-                            <div className={styles.fcArrow}>↓</div>
-
-                            <div className={styles.fcParallel}>
-                                <div className={`${styles.fcLayerBox} ${styles.fcLayerOrange}`}>
-                                    <div className={styles.fcLayerLabel} style={{color: 'var(--dash-orange)'}}>Layer 1</div>
-                                    <div className={styles.fcLayerContent}>
-                                        <div className={`${styles.fcNode} ${styles.fcNodeOrange}`}>Bandit</div>
-                                        <div className={`${styles.fcNode} ${styles.fcNodeOrange}`}>Patterns</div>
-                                    </div>
-                                </div>
-                                <div className={`${styles.fcLayerBox} ${styles.fcLayerPurple}`}>
-                                    <div className={styles.fcLayerLabel} style={{color: 'var(--dash-purple)'}}>Layer 2</div>
-                                    <div className={`${styles.fcNode} ${styles.fcNodePurple}`}>CodeBERT<div className={styles.fcNodeSub}>Buggy / Clean</div></div>
-                                </div>
-                            </div>
-
-                            <div className={styles.fcArrow}>↓</div>
-                            <div className={`${styles.fcNode} ${styles.fcNodeBlue}`}>Verdict Combination</div>
-                            <div className={styles.fcArrow}>↓</div>
-
-                            <div className={styles.fcRow}>
-                                <div className={`${styles.fcNode} ${styles.fcNodeCyan}`}>Clean ✓<div className={styles.fcNodeSub}>Done</div></div>
-                                <div className={styles.fcLabel}>or buggy →</div>
-                                <div className={`${styles.fcLayerBox} ${styles.fcLayerGreen}`}>
-                                    <div className={styles.fcLayerLabel} style={{color: 'var(--dash-green)'}}>Layer 3</div>
-                                    <div className={styles.fcRow}>
-                                        <div className={`${styles.fcNode} ${styles.fcNodeGreen}`}>Qwen2.5-7B<div className={styles.fcNodeSub}>5-section prompt</div></div>
-                                        <div className={styles.fcLabel}>fails →</div>
-                                        <div className={`${styles.fcNode} ${styles.fcNodeRed}`}>Fallback</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className={styles.fcArrow}>↓</div>
-                            <div className={`${styles.fcNode} ${styles.fcNodeBlue}`}>JSON → React Frontend<div className={styles.fcNodeSub}>Verdict + Confidence + Explanation</div></div>
-                        </div>
-                        <div className={styles.fcCaption}>Figure 1 · End-to-end 3-layer pipeline architecture</div>
+                        <Steps
+                            caption="Figure 1 · End-to-end 3-layer pipeline architecture"
+                            steps={[
+                                {
+                                    kicker: 'Input',
+                                    title: 'Student submits code',
+                                    tone: 'gray',
+                                    content: (
+                                        <Flow items={[
+                                            { title: 'React + Monaco editor', sub: 'Paste or upload' },
+                                            { title: 'Language detection', sub: '.py · .java · .cs' },
+                                            { title: 'Flask API', sub: 'Orchestrates the layers' },
+                                        ]} />
+                                    ),
+                                },
+                                {
+                                    kicker: 'Layers 1 + 2 · run in parallel',
+                                    title: 'Analyse the code',
+                                    tone: 'purple',
+                                    content: (
+                                        <Tiles>
+                                            <Tile tone="orange" label="Layer 1 · Static" title="Bandit + pattern rules" sub="Security issues and common bug patterns (regex / AST)" />
+                                            <Tile tone="purple" label="Layer 2 · Deep learning" title="CodeBERT classifier" sub="Fine-tuned model predicts buggy or clean, with confidence" />
+                                        </Tiles>
+                                    ),
+                                },
+                                {
+                                    kicker: 'Decision',
+                                    title: 'Combine into one verdict',
+                                    tone: 'blue',
+                                    content: (
+                                        <Tiles>
+                                            <Tile tone="cyan" label="If clean" title="Return result" sub="No explanation needed, done" />
+                                            <Tile tone="red" label="If buggy" title="Send to Layer 3" sub="Code + findings go to the LLM tutor" />
+                                        </Tiles>
+                                    ),
+                                },
+                                {
+                                    kicker: 'Layer 3 · LLM',
+                                    title: 'Explain the bug like a tutor',
+                                    tone: 'green',
+                                    content: (
+                                        <Tiles>
+                                            <Tile tone="green" label="Main" title="Qwen2.5-Coder-7B" sub="Writes a 5-section lesson: Goal · Bug · Fix · Lesson · Check" />
+                                            <Tile tone="gray" dashed label="If the LLM fails" title="Rule-based fallback" sub="Template explanation from the static findings" />
+                                        </Tiles>
+                                    ),
+                                },
+                                {
+                                    kicker: 'Output',
+                                    title: 'JSON back to the React frontend',
+                                    text: 'Verdict, confidence, highlighted lines and the explanation are shown in the review page.',
+                                    tone: 'blue',
+                                },
+                            ]}
+                        />
                         </GlassCard>
                     </FadeUp>
 
@@ -433,11 +450,11 @@ export default function Dashboard() {
                             <div className={styles.cardTitle} style={{ marginBottom: '1rem' }}>Structured 5-Section Output Format</div>
                             <div className={styles.outputSections}>
                                 {[
-                                    { num: 1, color: '#4a7cc9', title: 'Goal — What the code tries to do' },
-                                    { num: 2, color: '#c96161', title: 'The Bug — Symptom, cause, misconception' },
-                                    { num: 3, color: '#5ba88a', title: 'The Fix — Real diff, why it works' },
-                                    { num: 4, color: '#7b6cb5', title: 'Mini-Lesson — Rule of thumb, example' },
-                                    { num: 5, color: '#5b9ebd', title: 'Quick Check — One conceptual question' },
+                                    { num: 1, color: 'var(--dash-blue)', title: 'Goal — What the code tries to do' },
+                                    { num: 2, color: 'var(--dash-red)', title: 'The Bug — Symptom, cause, misconception' },
+                                    { num: 3, color: 'var(--dash-green)', title: 'The Fix — Real diff, why it works' },
+                                    { num: 4, color: 'var(--dash-purple)', title: 'Mini-Lesson — Rule of thumb, example' },
+                                    { num: 5, color: 'var(--dash-cyan)', title: 'Quick Check — One conceptual question' },
                                 ].map((s) => (
                                     <div key={s.num} className={styles.outputSection} style={{ borderLeftColor: s.color }}>
                                         <div className={styles.outputSectionLabel} style={{ color: s.color }}>Section {s.num}</div>
@@ -488,48 +505,76 @@ export default function Dashboard() {
                             <div className={styles.cardText} style={{ marginBottom: '1rem' }}>
                                 Data is deduplicated, normalised, and ID-split so paired buggy/fixed versions never leak across train/val/test.
                             </div>
-                            <div className={styles.flowchart}>
-                                <div className={`${styles.fcNode} ${styles.fcNodeGreen}`}>Python (~930K), Java (~160K), C# (~33K)<div className={styles.fcNodeSub}>Raw datasets</div></div>
-                                <div className={styles.fcArrow}>↓</div>
-
-                                <div className={styles.fcRow}>
-                                    <div className={`${styles.fcNode} ${styles.fcNodeGray}`} style={{maxWidth: '160px'}}>Remove Identical<div className={styles.fcNodeSub}>buggy == fixed</div></div>
-                                    <div className={styles.fcRowArrow}>→</div>
-                                    <div className={`${styles.fcNode} ${styles.fcNodeGray}`} style={{maxWidth: '160px'}}>Length Filter<div className={styles.fcNodeSub}>Remove trivial / oversized</div></div>
-                                    <div className={styles.fcRowArrow}>→</div>
-                                    <div className={`${styles.fcNode} ${styles.fcNodeGray}`} style={{maxWidth: '160px'}}>MD5 Dedup<div className={styles.fcNodeSub}>Within &amp; across sources</div></div>
-                                    <div className={styles.fcRowArrow}>→</div>
-                                    <div className={`${styles.fcNode} ${styles.fcNodeGray}`} style={{maxWidth: '160px'}}>Source Pruning<div className={styles.fcNodeSub}>Remove noisy sources</div></div>
-                                </div>
-
-                                <div className={styles.fcArrow}>↓</div>
-
-                                <div className={styles.fcRow} style={{gap: '2rem'}}>
-                                    <div className={`${styles.fcNode} ${styles.fcNodeOrange}`}>ID-Based Train / Val / Test Split<div className={styles.fcNodeSub}>70 / 15 / 15</div></div>
-                                    <div className={`${styles.fcNode} ${styles.fcNodeRed}`} style={{maxWidth: '220px'}}>⚠ Data Leakage Risk<div className={styles.fcNodeSub}>Random split = buggy in train, fixed in test</div></div>
-                                </div>
-
-                                <div className={styles.fcArrow}>↓</div>
-                                <div className={`${styles.fcNode} ${styles.fcNodeGray}`}>BPE Tokenisation<div className={styles.fcNodeSub}>RoBERTa tokenizer · 384 tokens</div></div>
-                                <div className={styles.fcArrow}>↓</div>
-
-                                <div className={styles.fcRow}>
-                                    <div className={`${styles.fcNode} ${styles.fcNodePurple}`}>CodeBERT Fine-Tuning<div className={styles.fcNodeSub}>Focal Loss · AdamW · Cosine</div></div>
-                                    <div className={styles.fcRowArrow}>→</div>
-                                    <div className={`${styles.fcNode} ${styles.fcNodeBlue}`}>3 Trained Models<div className={styles.fcNodeSub}>Python · Java · C#</div></div>
-                                </div>
-
-                                <div className={styles.fcArrow}>↓</div>
-
-                                <div className={styles.fcRow}>
-                                    <div className={`${styles.fcNode} ${styles.fcNodeCyan}`}>Threshold on Validation<div className={styles.fcNodeSub}>Optimise Macro-F1</div></div>
-                                    <div className={styles.fcRowArrow}>→</div>
-                                    <div className={`${styles.fcNode} ${styles.fcNodeCyan}`}>Test Evaluation<div className={styles.fcNodeSub}>Threshold frozen</div></div>
-                                    <div className={styles.fcRowArrow}>→</div>
-                                    <div className={`${styles.fcNode} ${styles.fcNodeGreen}`}>Deployed in Pipeline<div className={styles.fcNodeSub}>Frozen model + threshold</div></div>
-                                </div>
-                            </div>
-                            <div className={styles.fcCaption}>Figure 2: Training pipeline and data splitting strategy</div>
+                            <Steps
+                                caption="Figure 2 · Training pipeline and data splitting strategy"
+                                steps={[
+                                    {
+                                        kicker: 'Data',
+                                        title: 'Collect bug-fix pairs',
+                                        tone: 'green',
+                                        content: (
+                                            <Tiles>
+                                                <Tile tone="green" title="Python" sub="~930K pairs" />
+                                                <Tile tone="green" title="Java" sub="~160K pairs" />
+                                                <Tile tone="green" title="C#" sub="~33K pairs" />
+                                            </Tiles>
+                                        ),
+                                    },
+                                    {
+                                        kicker: 'Cleaning',
+                                        title: 'Remove noise and duplicates',
+                                        tone: 'gray',
+                                        content: (
+                                            <Flow items={[
+                                                { title: 'Remove identical', sub: 'buggy == fixed' },
+                                                { title: 'Length filter', sub: 'Trivial / oversized' },
+                                                { title: 'MD5 dedup', sub: 'Within & across sources' },
+                                                { title: 'Source pruning', sub: 'Drop noisy sources' },
+                                            ]} />
+                                        ),
+                                    },
+                                    {
+                                        kicker: 'Split',
+                                        title: 'ID-based train / val / test split · 70 / 15 / 15',
+                                        tone: 'orange',
+                                        content: (
+                                            <Note tone="red">
+                                                <strong>Why split by ID:</strong> a random split can put the buggy version in
+                                                training and its fixed version in test, which leaks the answer.
+                                            </Note>
+                                        ),
+                                    },
+                                    {
+                                        kicker: 'Tokenise',
+                                        title: 'BPE tokenisation',
+                                        text: 'RoBERTa tokenizer, inputs capped at 384 tokens.',
+                                        tone: 'gray',
+                                    },
+                                    {
+                                        kicker: 'Train',
+                                        title: 'Fine-tune CodeBERT',
+                                        tone: 'purple',
+                                        content: (
+                                            <Tiles>
+                                                <Tile tone="purple" label="Training" title="Focal loss · AdamW · cosine schedule" />
+                                                <Tile tone="blue" label="Result" title="3 trained models" sub="Python · Java · C#" />
+                                            </Tiles>
+                                        ),
+                                    },
+                                    {
+                                        kicker: 'Evaluate & deploy',
+                                        title: 'Pick the threshold, test, then deploy',
+                                        tone: 'cyan',
+                                        content: (
+                                            <Flow items={[
+                                                { title: 'Threshold on validation', sub: 'Maximise macro-F1' },
+                                                { title: 'Test evaluation', sub: 'Threshold frozen' },
+                                                { title: 'Deployed', sub: 'Model + threshold' },
+                                            ]} />
+                                        ),
+                                    },
+                                ]}
+                            />
                         </GlassCard>
                     </FadeUp>
 
@@ -577,8 +622,8 @@ export default function Dashboard() {
                                     ))}
                                 </div>
                                 <div className={styles.chartLegend}>
-                                    <span><span className={styles.legendDot} style={{ background: 'rgba(100,116,139,0.4)' }} /> Pre-trained</span>
-                                    <span><span className={styles.legendDot} style={{ background: '#4a7cc9' }} /> Fine-tuned</span>
+                                    <span><span className={styles.legendDot} style={{ background: 'rgba(90,109,138,0.4)' }} /> Pre-trained</span>
+                                    <span><span className={styles.legendDot} style={{ background: 'var(--dash-blue)' }} /> Fine-tuned</span>
                                 </div>
                             </GlassCard>
 
@@ -757,18 +802,18 @@ export default function Dashboard() {
                         <h3 className={styles.subTitle} style={{ marginTop: '3rem' }}>User Evaluation (n=30)</h3>
                         <div className={styles.compGrid}>
                             <GlassCard className={styles.compCard}>
-                                <div className={styles.compLabel} style={{ color: '#4a7cc9' }}>SUS Score</div>
+                                <div className={styles.compLabel} style={{ color: 'var(--dash-blue)' }}>SUS Score</div>
                                 <div className={styles.compVal}><span className={styles.gradient}>71.8</span></div>
                                 <div className={styles.compSub}>"Good" band (avg = 68)</div>
                             </GlassCard>
                             <GlassCard className={styles.compCard}>
-                                <div className={styles.compLabel} style={{ color: '#5ba88a' }}>Tutor Helpfulness</div>
-                                <div className={styles.compVal} style={{ color: '#5ba88a' }}>4.04<span className={styles.compUnit}>/5</span></div>
+                                <div className={styles.compLabel} style={{ color: 'var(--dash-green)' }}>Tutor Helpfulness</div>
+                                <div className={styles.compVal} style={{ color: 'var(--dash-green)' }}>4.04<span className={styles.compUnit}>/5</span></div>
                                 <div className={styles.compSub}>Clarity: 3.96/5</div>
                             </GlassCard>
                             <GlassCard className={styles.compCard}>
-                                <div className={styles.compLabel} style={{ color: '#7b6cb5' }}>Would Use Again</div>
-                                <div className={styles.compVal} style={{ color: '#7b6cb5' }}>22<span className={styles.compUnit}>/30</span></div>
+                                <div className={styles.compLabel} style={{ color: 'var(--dash-purple)' }}>Would Use Again</div>
+                                <div className={styles.compVal} style={{ color: 'var(--dash-purple)' }}>22<span className={styles.compUnit}>/30</span></div>
                                 <div className={styles.compSub}>Overall rating: 3.92/5</div>
                             </GlassCard>
                         </div>
@@ -845,16 +890,16 @@ export default function Dashboard() {
                         <GlassCard style={{ marginTop: '2.5rem', textAlign: 'center', padding: '3rem 2rem' }}>
                             <div className={styles.cardTitle} style={{ fontSize: '1.3rem', marginBottom: '1.5rem' }}>Final Takeaways</div>
                             <div className={styles.takeawayGrid}>
-                                <div className={styles.takeaway} style={{ borderLeftColor: '#4a7cc9' }}>
-                                    <div className={styles.takeawayLabel} style={{ color: '#4a7cc9' }}>Takeaway 1</div>
+                                <div className={styles.takeaway} style={{ borderLeftColor: 'var(--dash-blue)' }}>
+                                    <div className={styles.takeawayLabel} style={{ color: 'var(--dash-blue)' }}>Takeaway 1</div>
                                     <div>Built and deployed a full 3-layer educational code review system as a web app.</div>
                                 </div>
-                                <div className={styles.takeaway} style={{ borderLeftColor: '#7b6cb5' }}>
-                                    <div className={styles.takeawayLabel} style={{ color: '#7b6cb5' }}>Takeaway 2</div>
+                                <div className={styles.takeaway} style={{ borderLeftColor: 'var(--dash-purple)' }}>
+                                    <div className={styles.takeawayLabel} style={{ color: 'var(--dash-purple)' }}>Takeaway 2</div>
                                     <div>CodeBERT outperformed all baselines on all three languages under strict evaluation.</div>
                                 </div>
-                                <div className={styles.takeaway} style={{ borderLeftColor: '#5ba88a' }}>
-                                    <div className={styles.takeawayLabel} style={{ color: '#5ba88a' }}>Takeaway 3</div>
+                                <div className={styles.takeaway} style={{ borderLeftColor: 'var(--dash-green)' }}>
+                                    <div className={styles.takeawayLabel} style={{ color: 'var(--dash-green)' }}>Takeaway 3</div>
                                     <div>Rigorous data handling was as important as model choice.</div>
                                 </div>
                             </div>

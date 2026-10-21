@@ -139,6 +139,8 @@ function getErrorLines(result) {
 function ReviewPage() {
     const [code, setCode] = useState(PLACEHOLDER)
     const [language, setLanguage] = useState('python')
+    // true once the user (or an upload/history item) has set the language explicitly
+    const [languageLocked, setLanguageLocked] = useState(false)
     const [fileName, setFileName] = useState(null)
     const [history, setHistory] = useState([])
     const fileInputRef = useRef(null)
@@ -167,6 +169,7 @@ function ReviewPage() {
     function handleHistorySelect(item) {
         setCode(item.code)
         setLanguage(item.language)
+        setLanguageLocked(true)
     }
 
     function handleFileChange(e) {
@@ -175,6 +178,7 @@ function ReviewPage() {
         setFileName(file.name)
         const lang = file.name.endsWith('.java') ? 'java' : file.name.endsWith('.cs') ? 'csharp' : 'python'
         setLanguage(lang)
+        setLanguageLocked(true)
         const reader = new FileReader()
         reader.onload = (ev) => setCode(ev.target.result ?? '')
         reader.readAsText(file)
@@ -188,14 +192,18 @@ function ReviewPage() {
                 <div className={styles.sectionLabel}>
                     <span className={styles.labelDot} />
                     Your Code
-                    {fileName && <span className={styles.fileName}>{fileName}</span>}
+                    {fileName && <span className={styles.fileName} title={fileName}>{fileName}</span>}
                 </div>
 
                 <CodeEditor
                     value={code}
-                    onChange={setCode}
+                    onChange={(c) => {
+                        setCode(c)
+                        if (!c.trim()) setLanguageLocked(false)
+                    }}
                     language={language}
                     onLanguageChange={setLanguage}
+                    autoDetect={!languageLocked}
                     errorLines={errorLines}
                 />
 
@@ -236,13 +244,14 @@ function ReviewPage() {
                     />
 
                     {/* Language toggle */}
-                    <div className={styles.langToggle}>
+                    <div className={styles.langToggle} role="group" aria-label="Language">
                         {['python', 'java', 'csharp'].map((lang) => (
                             <button
                                 key={lang}
                                 className={`${styles.langBtn} ${language === lang ? styles.langBtnActive : ''}`}
-                                onClick={() => setLanguage(lang)}
+                                onClick={() => { setLanguage(lang); setLanguageLocked(true) }}
                                 disabled={isLoading}
+                                aria-pressed={language === lang}
                             >
                                 {lang === 'csharp' ? 'C#' : lang.toUpperCase()}
                             </button>
